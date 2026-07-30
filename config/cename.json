@@ -1,0 +1,436 @@
+{
+  "nombre": "CENAME - Centro Nacional de Metrología",
+  "descripcion": "el Centro Nacional de Metrología del Ministerio de Economía de Guatemala, integrado por el Laboratorio Nacional de Metrología (servicios de calibración y materiales de referencia) y la Unidad de Inspección y Verificación en Materia de Metrología Legal (verificaciones oficiales). Atiendes consultas del público sobre servicios, alcances y tarifas, y orientas a cada persona hacia el laboratorio o unidad correspondiente",
+  "tono": "formal pero cercano y servicial, propio de una institución pública guatemalteca; trata a la persona de usted",
+  "base_legal": "Acuerdo Gubernativo No. 173-2021, tarifario del Laboratorio Nacional de Metrología y de la UIVML",
+  "direccion": "Centro Nacional de Metrología, Ministerio de Economía, Ciudad de Guatemala",
+  "horarios": "Lunes a viernes, horario de oficina",
+  "contacto_humano": "el correo institucional info@cename.gt",
+  "metodos_pago": "Las tarifas están expresadas en dólares de los Estados Unidos de América y se hacen efectivas en quetzales, según el tipo de cambio para la venta vigente el día del pago, tomando como referencia la tasa del Banco de Guatemala (Artículo 22 del Acuerdo Gubernativo 173-2021)",
+
+  "reglas_extra": [
+    "Tu función es informar y derivar. NO cotizas formalmente, NO agendas, NO comprometes plazos ni disponibilidad de equipo: eso lo hace el laboratorio o unidad responsable.",
+    "Cuando la persona quiera solicitar un servicio, una cotización formal o agendar, identifica el laboratorio correcto según el instrumento o servicio y entrégale el nombre del responsable y su correo, indicando SIEMPRE que debe copiar a info@cename.gt.",
+    "Si la persona describe un instrumento que no logras ubicar en el tarifario, no adivines el área: pide una descripción breve (qué mide, marca/modelo, intervalo o capacidad) antes de derivar.",
+    "Las tarifas que indiques son referenciales del tarifario vigente; aclara que el monto final lo confirma el laboratorio según los puntos de calibración, cantidad de piezas e intervalo solicitados.",
+    "Distingue con claridad dos cosas distintas: CALIBRACIÓN (servicio del Laboratorio Nacional de Metrología, voluntario, con certificado) y VERIFICACIÓN (actividad oficial de la UIVML en instrumentos sujetos a control metrológico legal, como dispensadores de combustible, medidores de agua, medidores de energía eléctrica y contenido neto de preempacados).",
+    "Si la consulta es una denuncia ciudadana (por ejemplo sospecha de que un dispensador de combustible o una balanza no despacha la cantidad correcta), tómala con seriedad, pide los datos del establecimiento y deriva a la unidad correspondiente con copia a info@cename.gt.",
+    "No opines sobre casos en trámite, resoluciones, sanciones ni asuntos legales; deriva esas consultas a info@cename.gt.",
+    "No solicites datos personales innecesarios: basta el nombre de la persona o empresa, el instrumento y un correo de contacto."
+  ],
+
+  "marcador_notificar": "Cuando una persona haya manifestado intención de solicitar un servicio y ya le hayas indicado el laboratorio y correo de derivación (con los datos mínimos: instrumento/servicio, nombre o empresa, y área derivada)",
+
+  "tarifario": [
+    {
+      "area": "Masa — calibración de masas OIML (por pieza calibrada)",
+      "items": [
+        { "servicio": "E2 hasta 100 g", "tarifa": "US $50.00" },
+        { "servicio": "E2 mayores de 100 g hasta 1 kg", "tarifa": "US $75.00" },
+        { "servicio": "F1 hasta 100 g", "tarifa": "US $30.00" },
+        { "servicio": "F1 mayores de 100 g hasta 1 kg", "tarifa": "US $35.00" },
+        { "servicio": "F1 mayores de 1 kg hasta 2 kg", "tarifa": "US $40.00" },
+        { "servicio": "F1 mayores de 2 kg hasta 50 kg", "tarifa": "US $50.00" },
+        { "servicio": "F2 hasta 1 kg", "tarifa": "US $20.00" },
+        { "servicio": "F2 mayores de 1 kg hasta 10 kg", "tarifa": "US $30.00" },
+        { "servicio": "F2 mayores de 10 kg hasta 20 kg", "tarifa": "US $40.00" },
+        { "servicio": "M1, M2 y M3 hasta 100 g", "tarifa": "US $15.00" },
+        { "servicio": "M1, M2 y M3 mayores de 100 g hasta 2 kg", "tarifa": "US $20.00" },
+        { "servicio": "M1, M2 y M3 mayores de 2 kg hasta 10 kg", "tarifa": "US $25.00" },
+        { "servicio": "M1, M2 y M3 mayores de 10 kg hasta 50 kg", "tarifa": "US $30.00" },
+        { "servicio": "Mayores de 50 kg hasta 100 kg (M1, M1-2, M2, M2-3, M3)", "tarifa": "US $100.00" },
+        { "servicio": "Mayores de 100 kg hasta 200 kg", "tarifa": "US $200.00" },
+        { "servicio": "Mayores de 200 kg hasta 500 kg", "tarifa": "US $300.00" },
+        { "servicio": "Mayores de 500 kg hasta 1 000 kg", "tarifa": "US $400.00" }
+      ]
+    },
+    {
+      "area": "Masa — calibración de masas ASTM, NIST y masas en libras (no SI), por pieza",
+      "items": [
+        { "servicio": "Hasta 10 kg", "tarifa": "US $20.00" },
+        { "servicio": "Mayores de 10 kg hasta 25 kg", "tarifa": "US $25.00" },
+        { "servicio": "Mayores de 25 kg hasta 50 kg", "tarifa": "US $50.00" },
+        { "servicio": "Mayores de 50 kg hasta 100 kg", "tarifa": "US $100.00" },
+        { "servicio": "Mayores de 100 kg hasta 200 kg", "tarifa": "US $200.00" },
+        { "servicio": "Mayores de 200 kg hasta 500 kg", "tarifa": "US $300.00" },
+        { "servicio": "Mayores de 500 kg hasta 1000 kg", "tarifa": "US $500.00" }
+      ],
+      "nota": "En estos casos se emite informe, no certificado"
+    },
+    {
+      "area": "Masa — calibración de balanzas",
+      "items": [
+        { "servicio": "Balanzas hasta 10 kg", "tarifa": "US $100.00" },
+        { "servicio": "Balanzas hasta 100 kg", "tarifa": "US $150.00" },
+        { "servicio": "Balanzas hasta 400 kg", "tarifa": "US $200.00" }
+      ]
+    },
+    {
+      "area": "Volumen — contenedores de volumen (por pieza calibrada)",
+      "items": [
+        { "servicio": "Mayor a 2 L hasta 5 L", "tarifa": "US $40.00", "nota": "método gravimétrico" },
+        { "servicio": "Mayor a 5 L hasta 10 L", "tarifa": "US $50.00", "nota": "método gravimétrico" },
+        { "servicio": "Más de 10 L hasta 20 L", "tarifa": "US $100.00", "nota": "método gravimétrico" },
+        { "servicio": "Más de 10 L hasta 20 L", "tarifa": "US $60.00", "nota": "método volumétrico" },
+        { "servicio": "Más de 20 L hasta 50 L", "tarifa": "US $125.00", "nota": "método volumétrico" },
+        { "servicio": "Más de 50 L hasta 100 L", "tarifa": "US $200.00", "nota": "método volumétrico" },
+        { "servicio": "Más de 100 L hasta 500 L", "tarifa": "US $300.00", "nota": "método volumétrico" },
+        { "servicio": "Más de 500 L hasta 1000 L", "tarifa": "US $400.00", "nota": "método volumétrico" },
+        { "servicio": "Camiones cisterna", "tarifa": "US $400.00", "nota": "método volumétrico" }
+      ]
+    },
+    {
+      "area": "Volumen — instrumentos menores a 2000 mL (material volumétrico, método gravimétrico)",
+      "items": [
+        { "servicio": "Matraz volumétrico clase A o B (5 mL–2000 mL)", "tarifa": "US $30.00" },
+        { "servicio": "Pipeta volumétrica clase A o B (1 mL–200 mL)", "tarifa": "US $30.00" },
+        { "servicio": "Pipeta graduada clase A o B, 3 puntos (1 mL–25 mL)", "tarifa": "US $45.00", "nota": "punto adicional US $10.00" },
+        { "servicio": "Bureta clase A o B, 3 puntos (1 mL–100 mL)", "tarifa": "US $45.00", "nota": "punto adicional US $10.00" },
+        { "servicio": "Probeta clase B, 3 puntos (5 mL–2000 mL)", "tarifa": "US $45.00", "nota": "punto adicional US $10.00" },
+        { "servicio": "Picnómetro Gay-Lussac (5 mL–100 mL)", "tarifa": "US $40.00" },
+        { "servicio": "Micropipeta de una sola medida", "tarifa": "US $60.00" },
+        { "servicio": "Micropipeta graduada", "tarifa": "US $75.00" },
+        { "servicio": "Micropipeta multicanal", "tarifa": "US $60.00 por canal" }
+      ]
+    },
+    {
+      "area": "Densidad",
+      "items": [
+        { "servicio": "Densímetros de inmersión, 3 puntos", "tarifa": "US $60.00", "nota": "punto adicional US $11.00" },
+        { "servicio": "Determinación de densidad de sólidos", "tarifa": "US $170.00" },
+        { "servicio": "Determinación de densidad de líquidos", "tarifa": "US $60.00" },
+        { "servicio": "Densidad de líquidos en picnómetros", "tarifa": "US $50.00" },
+        { "servicio": "Densidad de sólidos en picnómetros", "tarifa": "US $150.00" },
+        { "servicio": "Densímetros oscilatorios", "tarifa": "US $300.00" }
+      ],
+      "nota": "Para densidad de sólidos, la pieza debe ser única y no reaccionar químicamente con el líquido de referencia"
+    },
+    {
+      "area": "Viscosidad",
+      "items": [
+        { "servicio": "Viscosímetros capilares", "tarifa": "US $50.00" },
+        { "servicio": "Viscosidad cinemática hasta 250 mm²/s", "tarifa": "US $50.00" },
+        { "servicio": "Viscosidad cinemática mayor de 250 hasta 10 000 mm²/s", "tarifa": "US $80.00" },
+        { "servicio": "Viscosidad cinemática mayor de 10 000 hasta 40 000 mm²/s", "tarifa": "US $100.00" }
+      ]
+    },
+    {
+      "area": "Temperatura — termómetros (tarifa por 4 puntos de calibración)",
+      "items": [
+        { "servicio": "Termómetros de líquido en vidrio, digitales y bimetálicos de -20 °C a 0 °C", "tarifa": "US $35.00", "nota": "punto adicional US $10.00" },
+        { "servicio": "Termómetros de líquido en vidrio, digitales y bimetálicos de más de 0 °C hasta 100 °C", "tarifa": "US $30.00", "nota": "punto adicional US $10.00" },
+        { "servicio": "Termómetros de líquido en vidrio, digitales y bimetálicos de más de 100 °C hasta 300 °C", "tarifa": "US $30.00", "nota": "punto adicional US $10.00" },
+        { "servicio": "Termopares de -40 °C a 0 °C", "tarifa": "US $50.00", "nota": "punto adicional US $15.00" },
+        { "servicio": "Termopares de más de 0 °C hasta 50 °C", "tarifa": "US $30.00", "nota": "punto adicional US $10.00" },
+        { "servicio": "Termopares de más de 50 °C hasta 600 °C", "tarifa": "US $50.00", "nota": "punto adicional US $10.00" },
+        { "servicio": "Termopares de más de 600 °C hasta 1100 °C", "tarifa": "US $60.00", "nota": "punto adicional US $15.00" },
+        { "servicio": "Termómetro de resistencia de platino industrial (-40 °C a 0 °C; 0–140 °C; 140–400 °C)", "tarifa": "US $75.00", "nota": "punto adicional US $20.00" }
+      ]
+    },
+    {
+      "area": "Tiempo y frecuencia",
+      "items": [
+        { "servicio": "Relojes escala no menor a 1/1000 s", "tarifa": "US $100.00" },
+        { "servicio": "Cronómetros escala no menor a 1/1000 s", "tarifa": "US $100.00" },
+        { "servicio": "Tacómetros ópticos", "tarifa": "US $200.00" },
+        { "servicio": "Frecuencímetros", "tarifa": "US $400.00 (oscilador de cristal) / US $700.00 (oscilador atómico)" },
+        { "servicio": "Centrífugas", "tarifa": "US $200.00" },
+        { "servicio": "Sintetizadores generadores de señal", "tarifa": "US $400.00 / US $700.00 (atómico)" },
+        { "servicio": "Contadores de intervalos de tiempo", "tarifa": "US $400.00 / US $700.00 (atómico)" },
+        { "servicio": "Patrones de frecuencia", "tarifa": "US $500.00 / US $800.00 (atómico)" },
+        { "servicio": "Osciladores y patrones de frecuencia especiales", "tarifa": "US $800.00" },
+        { "servicio": "Calibración remota por método de vista común", "tarifa": "US $1000.00" },
+        { "servicio": "Trazabilidad remota en tiempo-frecuencia (sistema por vista común)", "tarifa": "Instrumento + US $700.00 mensuales" },
+        { "servicio": "Servicios personalizados de tiempo y frecuencia", "tarifa": "US $100.00 por hora efectiva" },
+        { "servicio": "NTP dedicado", "tarifa": "US $100.00 inicial más US $500.00 por año" }
+      ]
+    },
+    {
+      "area": "Materiales de referencia (producción con certificado de lote)",
+      "items": [
+        { "servicio": "MR pH primario 6,865 — frasco de 30 g", "tarifa": "US $200.00" },
+        { "servicio": "MR pH primario 4,008 — frasco de 30 g", "tarifa": "US $250.00" },
+        { "servicio": "MR pH primario 10,012 — frasco de 30 g", "tarifa": "US $260.00" },
+        { "servicio": "MR pH secundario 6,865 — frasco de 30 g", "tarifa": "US $180.00" },
+        { "servicio": "MR pH secundario 4,008 — frasco de 30 g", "tarifa": "US $185.00" },
+        { "servicio": "MR pH secundario 10,012 — frasco de 30 g", "tarifa": "US $190.00" },
+        { "servicio": "MR conductividad eléctrica secundarios (0,07182 / 0,02916 / 0,01469 S/m) — ampollas de 50 mL", "tarifa": "US $130.00" }
+      ]
+    },
+    {
+      "area": "Fisicoquímica (calibración de equipo)",
+      "items": [
+        { "servicio": "pH — sensor", "tarifa": "US $110.00" },
+        { "servicio": "pH — fuente", "tarifa": "US $200.00" },
+        { "servicio": "pH — sistema (sensor y fuente)", "tarifa": "US $250.00" },
+        { "servicio": "Conductividad — sensor", "tarifa": "US $110.00" },
+        { "servicio": "Conductividad — fuente", "tarifa": "US $200.00" },
+        { "servicio": "Conductividad — sistema (sensor y fuente)", "tarifa": "US $250.00" },
+        { "servicio": "Espectrofotómetro", "tarifa": "US $250.00" },
+        { "servicio": "Polarímetro", "tarifa": "US $900.00" },
+        { "servicio": "Refractómetro", "tarifa": "US $1500.00" }
+      ]
+    },
+    {
+      "area": "Variables eléctricas (multímetros, voltímetros, amperímetros, ohmímetros)",
+      "items": [
+        { "servicio": "Instrumento de BAJA exactitud — primer punto", "tarifa": "US $50.00", "nota": "punto adicional hasta 5: US $10.00; más de 5: US $5.00" },
+        { "servicio": "Instrumento de MEDIANA exactitud — primer punto", "tarifa": "US $75.00", "nota": "punto adicional hasta 5: US $20.00; más de 5: US $10.00" },
+        { "servicio": "Instrumento de ALTA exactitud — primer punto", "tarifa": "US $100.00", "nota": "punto adicional hasta 5: US $30.00; más de 5: US $15.00" },
+        { "servicio": "Corriente continua de 10 pA a <1 µA (mediana exactitud)", "tarifa": "US $50.00 por punto" },
+        { "servicio": "Resistencia eléctrica >1 GΩ a 1 TΩ (mediana exactitud)", "tarifa": "US $50.00 por punto" },
+        { "servicio": "Corriente continua de 10 pA a <1 µA (alta exactitud)", "tarifa": "US $60.00 por punto" },
+        { "servicio": "Resistencia eléctrica >1 GΩ a 1 TΩ (alta exactitud)", "tarifa": "US $60.00 por punto" }
+      ],
+      "nota": "Magnitudes cubiertas: tensión y corriente CC/CA, resistencia, frecuencia y capacitancia, según intervalos del acuerdo"
+    },
+    {
+      "area": "Calibradores de procesos o generadores de señales eléctricas",
+      "items": [
+        { "servicio": "Baja exactitud — primer punto", "tarifa": "US $75.00", "nota": "punto adicional hasta 5: US $20.00; más de 5: US $10.00" },
+        { "servicio": "Mediana exactitud — primer punto", "tarifa": "US $100.00", "nota": "punto adicional hasta 5: US $30.00; más de 5: US $15.00; resistencia >1 GΩ a 1 TΩ: US $40.00 por punto" },
+        { "servicio": "Alta exactitud — primer punto", "tarifa": "US $150.00", "nota": "punto adicional hasta 5: US $50.00; más de 5: US $25.00; resistencia >1 GΩ a 1 TΩ: US $60.00 por punto" }
+      ]
+    },
+    {
+      "area": "Presión (tarifa por 2 puntos de calibración)",
+      "items": [
+        { "servicio": "Barómetro", "tarifa": "US $40.00", "nota": "punto adicional US $15.00" },
+        { "servicio": "Manómetro", "tarifa": "US $70.00", "nota": "punto adicional US $15.00" },
+        { "servicio": "Calibrador/controlador de presión relativa", "tarifa": "US $140.00", "nota": "punto adicional US $15.00" },
+        { "servicio": "Calibrador/controlador de presión absoluta", "tarifa": "US $195.00", "nota": "punto adicional US $20.00" },
+        { "servicio": "Monitor de presión arterial no invasivo", "tarifa": "US $140.00", "nota": "punto adicional US $15.00" },
+        { "servicio": "Vacuómetro", "tarifa": "US $70.00" },
+        { "servicio": "Transductor neumático 0,1 %", "tarifa": "US $80.00", "nota": "punto adicional US $15.00" },
+        { "servicio": "Transductor neumático 0,01 %", "tarifa": "US $160.00", "nota": "punto adicional US $15.00" },
+        { "servicio": "Transductor hidráulico", "tarifa": "US $150.00", "nota": "punto adicional US $15.00" },
+        { "servicio": "Balanzas de presión de peso muerto (hidráulica / absoluta / general)", "tarifa": "US $190.00", "nota": "punto adicional US $20.00" }
+      ]
+    },
+    {
+      "area": "Fuerza — máquinas de tensión y compresión (tarifa por 3 puntos)",
+      "items": [
+        { "servicio": "Máquina de tensión o compresión 10 N – 200 N", "tarifa": "US $75.00", "nota": "punto adicional US $25.00" },
+        { "servicio": "Máquina de tensión o compresión 200 N – 500 N", "tarifa": "US $100.00", "nota": "punto adicional US $25.00" },
+        { "servicio": "Máquina de tensión o compresión 500 N – 10 kN", "tarifa": "US $250.00", "nota": "punto adicional US $50.00" },
+        { "servicio": "Máquina de compresión 10 kN – 500 kN", "tarifa": "US $500.00", "nota": "punto adicional US $100.00" },
+        { "servicio": "Máquina de tensión 20 kN – 200 kN", "tarifa": "US $500.00", "nota": "punto adicional US $100.00" },
+        { "servicio": "Máquina de compresión 500 kN – 5 MN", "tarifa": "US $800.00", "nota": "punto adicional US $150.00" }
+      ]
+    },
+    {
+      "area": "Dimensional — calibres de altura",
+      "items": [
+        { "servicio": "Analógicos/digitales hasta 150 mm", "tarifa": "US $20.00" },
+        { "servicio": "Hasta 200 mm", "tarifa": "US $25.00" },
+        { "servicio": "Hasta 250 mm", "tarifa": "US $30.00" },
+        { "servicio": "Hasta 300 mm", "tarifa": "US $35.00" },
+        { "servicio": "Hasta 450 mm", "tarifa": "US $50.00" },
+        { "servicio": "Hasta 600 mm", "tarifa": "US $80.00" },
+        { "servicio": "Hasta 1000 mm", "tarifa": "US $100.00" },
+        { "servicio": "Digitales QM-Height Gages hasta 350 mm", "tarifa": "US $130.00" },
+        { "servicio": "Digitales QM-Height Gages hasta 600 mm", "tarifa": "US $185.00" }
+      ]
+    },
+    {
+      "area": "Dimensional — micrómetros",
+      "items": [
+        { "servicio": "Exterior con topes intercambiables: hasta 50 / 100 / 150 / 300 / 600 mm", "tarifa": "US $25 / $30 / $35 / $40 / $70" },
+        { "servicio": "Exterior con topes fijos: hasta 50 mm", "tarifa": "US $20.00" },
+        { "servicio": "Exterior topes fijos: >50 hasta 150 mm", "tarifa": "US $30.00" },
+        { "servicio": "Exterior topes fijos: >150 hasta 300 mm", "tarifa": "US $35.00" },
+        { "servicio": "Exterior topes fijos: >300 hasta 450 mm", "tarifa": "US $50.00" },
+        { "servicio": "Exterior topes fijos: >450 hasta 600 mm", "tarifa": "US $65.00" },
+        { "servicio": "Profundidad: hasta 50 mm", "tarifa": "US $50.00" },
+        { "servicio": "Profundidad: >50 hasta 150 mm", "tarifa": "US $100.00" },
+        { "servicio": "Profundidad: >150 hasta 300 mm", "tarifa": "US $250.00" },
+        { "servicio": "Interior de 2 contactos: de US $20.00 (50–63 mm) hasta US $650.00 (100–2100 mm)", "tarifa": "según intervalo" },
+        { "servicio": "Interior de 3 contactos: de US $25.00 (5–50 mm) hasta US $70.00 (250–300 mm)", "tarifa": "según intervalo" },
+        { "servicio": "Cabezales micrométricos hasta 100 mm", "tarifa": "US $30.00" }
+      ]
+    },
+    {
+      "area": "Dimensional — pie de rey (vernier), calibres de profundidad y relojes",
+      "items": [
+        { "servicio": "Pie de rey hasta 150 mm", "tarifa": "US $20.00" },
+        { "servicio": "Pie de rey hasta 200 mm", "tarifa": "US $40.00" },
+        { "servicio": "Pie de rey hasta 300 mm", "tarifa": "US $60.00" },
+        { "servicio": "Pie de rey hasta 450 mm", "tarifa": "US $80.00" },
+        { "servicio": "Pie de rey hasta 500 mm", "tarifa": "US $100.00" },
+        { "servicio": "Pie de rey hasta 750 mm", "tarifa": "US $260.00" },
+        { "servicio": "Pie de rey hasta 900 mm", "tarifa": "US $350.00" },
+        { "servicio": "Pie de rey hasta 1000 mm", "tarifa": "US $400.00" },
+        { "servicio": "Calibres de profundidad hasta 150 / 200 / 300 mm", "tarifa": "US $90 / $100 / $150" },
+        { "servicio": "Relojes comparadores hasta 20 / 30 / 50 / 100 mm", "tarifa": "US $100 / $155 / $190 / $230" },
+        { "servicio": "Relojes palpadores hasta 2 mm", "tarifa": "US $125.00" },
+        { "servicio": "Comparadores de diámetros internos o alesómetros clase A o B hasta 600 mm", "tarifa": "US $35.00" }
+      ]
+    },
+    {
+      "area": "Longitud — cintas métricas, reglas, mesas de granito y bloques patrón",
+      "items": [
+        { "servicio": "Cinta métrica hasta 3 m (10 puntos)", "tarifa": "US $40.00", "nota": "punto adicional US $5.00" },
+        { "servicio": "Cinta métrica 5,5 m (10 puntos)", "tarifa": "US $60.00", "nota": "punto adicional US $10.00" },
+        { "servicio": "Cinta métrica hasta 20 m (10 puntos)", "tarifa": "US $100.00", "nota": "punto adicional US $10.00" },
+        { "servicio": "Cinta métrica hasta 30 m (10 puntos)", "tarifa": "US $150.00", "nota": "punto adicional US $15.00" },
+        { "servicio": "Cinta métrica hasta 50 m (10 puntos)", "tarifa": "US $200.00", "nota": "punto adicional US $20.00; 20 puntos US $300.00" },
+        { "servicio": "Cinta métrica hasta 100 m (10 puntos)", "tarifa": "US $250.00", "nota": "punto adicional US $20.00; 20 puntos US $350.00" },
+        { "servicio": "Cinta métrica hasta 250 m (25 puntos)", "tarifa": "US $450.00" },
+        { "servicio": "Cinta de diámetro hasta 6 m", "tarifa": "US $150.00" },
+        { "servicio": "Regla metálica hasta 300 mm (10 puntos)", "tarifa": "US $40.00", "nota": "punto adicional US $10.00" },
+        { "servicio": "Regla metálica hasta 1000 mm (10 puntos)", "tarifa": "US $80.00", "nota": "punto adicional US $15.00" },
+        { "servicio": "Mesa de granito hasta 600 mm", "tarifa": "US $150.00" },
+        { "servicio": "Mesa de granito >600 hasta 1000 mm", "tarifa": "US $200.00" },
+        { "servicio": "Bloques patrón grado 0, hasta 100 mm (por unidad)", "tarifa": "US $80.00" },
+        { "servicio": "Bloques patrón grado 0, mayores de 100 mm (por unidad)", "tarifa": "US $120.00" },
+        { "servicio": "Bloques patrón grado 1 y 2, hasta 100 mm (por unidad)", "tarifa": "US $20.00" },
+        { "servicio": "Bloques patrón grado 1 y 2, mayores de 100 mm (por unidad)", "tarifa": "US $30.00" }
+      ]
+    },
+    {
+      "area": "Metrología legal — servicios de inspección y verificación (UIVML)",
+      "items": [
+        { "servicio": "Despacho de combustible por dispensador — verificación inicial", "tarifa": "US $25.00" },
+        { "servicio": "Despacho de combustible por dispensador — verificación periódica", "tarifa": "US $20.00" },
+        { "servicio": "Contador de flujo de agua domiciliar — verificación inicial", "tarifa": "US $15.00" },
+        { "servicio": "Contador de flujo de agua domiciliar — verificación periódica", "tarifa": "US $10.00" },
+        { "servicio": "Contador de flujo de energía eléctrica — verificación inicial", "tarifa": "US $30.00" },
+        { "servicio": "Contador de flujo de energía eléctrica — verificación periódica", "tarifa": "US $25.00" },
+        { "servicio": "Contenido neto en productos preempacados — verificación inicial", "tarifa": "US $20.00 por hora" },
+        { "servicio": "Contenido neto en productos preempacados — verificación periódica", "tarifa": "US $15.00 por hora" }
+      ]
+    },
+    {
+      "area": "Metrología legal — instalación de marchamos y licencias",
+      "items": [
+        { "servicio": "Instalación de marchamo (dispensadores de combustible, medidores de energía eléctrica domiciliar, medidores de agua domiciliar y otros equipos con dispositivo de ajuste)", "tarifa": "US $2.00 por marchamo" },
+        { "servicio": "Licencia inicial para prestación de servicio de inspección y verificación", "tarifa": "US $1000.00" },
+        { "servicio": "Extensión del período de cada licencia otorgada", "tarifa": "US $500.00" }
+      ]
+    },
+    {
+      "area": "Capacitación",
+      "items": [
+        { "servicio": "Capacitación de recurso humano en materia de metrología", "tarifa": "US $25.00 hora/hombre por persona participante" }
+      ]
+    }
+  ],
+
+  "derivaciones": [
+    {
+      "area": "Laboratorio de Presión y Fuerza",
+      "responsable": "Fernando A. Rodríguez Coronado",
+      "correo": "frodriguez@mineco.gob.gt",
+      "palabras_clave": "manómetros, barómetros, vacuómetros, transductores de presión, calibradores de presión, monitores de presión arterial, balanzas de peso muerto, máquinas de tensión y compresión, celdas de carga"
+    },
+    {
+      "area": "Laboratorio de Volumen",
+      "responsable": "Ing. Darwin Jocholá",
+      "correo": "djochola@mineco.gob.gt",
+      "palabras_clave": "contenedores de volumen, camiones cisterna, matraces, pipetas, buretas, probetas, picnómetros, micropipetas, material volumétrico"
+    },
+    {
+      "area": "Laboratorio de Tiempo y Frecuencia y Laboratorio de Electricidad",
+      "responsable": "Ing. Max Alexander Chalí Izquierdo",
+      "correo": "mchali@mineco.gob.gt",
+      "palabras_clave": "cronómetros, relojes, tacómetros, frecuencímetros, centrífugas, patrones de frecuencia, NTP, multímetros, voltímetros, amperímetros, ohmímetros, calibradores de procesos, generadores de señal, variables eléctricas"
+    },
+    {
+      "area": "Laboratorio de Termómetros de Líquido en Vidrio y Termorresistencias",
+      "responsable": "Ing. Alan Fernando Figueroa",
+      "correo": "affigueroar@mineco.gob.gt",
+      "palabras_clave": "termómetros de líquido en vidrio, termómetros digitales, bimetálicos, termopares, termorresistencias, PRT, temperatura"
+    },
+    {
+      "area": "Laboratorio de Materiales de Referencia y Laboratorio de Viscosidad",
+      "responsable": "Ing. Nelson Velásquez",
+      "correo": "ndelgado@mineco.gob.gt",
+      "palabras_clave": "materiales de referencia, MR de pH, conductividad eléctrica, viscosímetros, viscosidad cinemática, densidad, densímetros, pH, espectrofotómetros, polarímetros, refractómetros, fisicoquímica"
+    },
+    {
+      "area": "Laboratorio de Longitud y Laboratorio de Dimensional",
+      "responsable": "Ing. Luis Antonio Canahuí Baten",
+      "correo": "lacanahuib@mineco.gob.gt",
+      "palabras_clave": "cintas métricas, reglas, bloques patrón, mesas de granito, micrómetros, pie de rey, vernier, calibres de altura y profundidad, relojes comparadores, alesómetros, cabezales micrométricos"
+    },
+    {
+      "area": "Laboratorio de Masa Fina",
+      "responsable": "Carlos González Cajas",
+      "correo": "cjgonzalez@mineco.gob.gt",
+      "palabras_clave": "masas E2, F1, F2, masas patrón pequeñas, balanzas analíticas, balanzas hasta 10 kg, pesas de laboratorio"
+    },
+    {
+      "area": "Laboratorio de Masa Gruesa",
+      "responsable": "Ing. Arnold Oswaldo Hernández Orozco",
+      "correo": "aohernandez@mineco.gob.gt",
+      "palabras_clave": "masas M1, M2, M3, masas grandes de 50 kg a 1000 kg, masas ASTM y NIST, masas en libras, balanzas hasta 100 y 400 kg, básculas"
+    },
+    {
+      "area": "Unidad de Inspección de Cantidad de Producto en Preempacados (Plan Peso Justo)",
+      "responsable": "Ing. Julio Alejandro Villacinda Cárcamo",
+      "correo": "javillacindac@mineco.gob.gt",
+      "palabras_clave": "contenido neto, productos preempacados, etiquetado de cantidad, peso justo, verificación de contenido en empaques"
+    },
+    {
+      "area": "Unidad de Verificación de Dispensadores de Combustible (Plan Centinela)",
+      "responsable": "Ing. Dimas Lisandro González Rosales",
+      "correo": "dlgonzalezr@mineco.gob.gt",
+      "palabras_clave": "dispensadores de combustible, surtidores de gasolina, estaciones de servicio, gasolineras, despacho de combustible, denuncias por despacho incorrecto de combustible"
+    },
+    {
+      "area": "Laboratorio de Verificación de Medidores de Energía Eléctrica y Laboratorio de Verificación de Medidores de Agua",
+      "responsable": "Ing. Andoni Aldair Rojas Álvarez",
+      "correo": "aarojasa@mineco.gob.gt",
+      "palabras_clave": "medidores de energía eléctrica, contadores de electricidad, medidores de agua, contadores de agua domiciliar, verificación de medidores"
+    }
+  ],
+
+  "copia_obligatoria": "info@cename.gt",
+
+  "notas": [
+    "Calibraciones, verificaciones e inspecciones fuera de los límites del Municipio de Guatemala: se agrega US $0.50 por kilómetro recorrido, partiendo de la sede del CENAME (Artículo 19).",
+    "El monto de las tarifas se paga en quetzales al tipo de cambio de venta vigente el día del pago, según la tasa de referencia del Banco de Guatemala (Artículo 22).",
+    "La UIVML puede autorizar que las actividades de inspección y verificación sean realizadas por organismos de inspección y verificación acreditados o reconocidos en el país (Artículo 21).",
+    "Las tarifas de calibración incluyen la emisión del certificado respectivo. Para masas ASTM, NIST y masas en libras se emite informe en lugar de certificado.",
+    "El tarifario vigente es el Acuerdo Gubernativo No. 173-2021, que derogó el Acuerdo Gubernativo No. 252-2010."
+  ],
+
+  "faq": [
+    {
+      "p": "¿Cuál es la diferencia entre calibración y verificación?",
+      "r": "La calibración es un servicio del Laboratorio Nacional de Metrología que establece la relación entre los valores de un patrón y las indicaciones del instrumento, con su incertidumbre asociada, y concluye con un certificado. La verificación es la aportación de evidencia objetiva de que un instrumento cumple requisitos especificados; en metrología legal la realiza la UIVML sobre instrumentos sujetos a control, como dispensadores de combustible, medidores de agua, medidores de energía eléctrica y contenido neto de preempacados."
+    },
+    {
+      "p": "¿Cómo solicito un servicio de calibración?",
+      "r": "Debe escribir al correo del laboratorio que corresponde a su instrumento, copiando siempre a info@cename.gt, indicando el instrumento (marca, modelo, intervalo o capacidad), la cantidad de piezas y los puntos de calibración que necesita. El laboratorio le confirmará la cotización, los requisitos y la programación."
+    },
+    {
+      "p": "¿En qué moneda se pagan las tarifas?",
+      "r": "Las tarifas están expresadas en dólares estadounidenses, pero el pago se hace efectivo en quetzales según el tipo de cambio para la venta vigente el día del pago, tomando como referencia la tasa del Banco de Guatemala."
+    },
+    {
+      "p": "¿El CENAME atiende fuera de la ciudad de Guatemala?",
+      "r": "Sí. Cuando el servicio se realiza fuera de los límites del Municipio de Guatemala se agrega US $0.50 por kilómetro recorrido desde la sede del CENAME, además de la tarifa del servicio."
+    },
+    {
+      "p": "¿La tarifa incluye el certificado?",
+      "r": "Sí, las tarifas de calibración incluyen la emisión del certificado correspondiente. En el caso de masas ASTM, NIST y masas en libras que no cumplen con el Sistema Internacional de Unidades, se emite un informe."
+    },
+    {
+      "p": "¿Cuánto tiempo tarda un servicio?",
+      "r": "Los plazos dependen de la carga de trabajo y del tipo de instrumento, por lo que los confirma directamente el laboratorio responsable al momento de la cotización."
+    },
+    {
+      "p": "¿Quiero denunciar una gasolinera que no despacha la cantidad correcta, qué hago?",
+      "r": "Puede reportarlo a la Unidad de Verificación de Dispensadores de Combustible, indicando el nombre y la ubicación exacta del establecimiento, la fecha y la descripción de lo ocurrido, escribiendo al Ing. Dimas Lisandro González Rosales (dlgonzalezr@mineco.gob.gt) con copia a info@cename.gt."
+    },
+    {
+      "p": "¿Ofrecen capacitaciones en metrología?",
+      "r": "Sí, el CENAME brinda servicios de capacitación de recurso humano en materia de metrología, con una tarifa de US $25.00 hora/hombre por persona participante. Para programar una capacitación puede escribir a info@cename.gt."
+    },
+    {
+      "p": "¿Puedo obtener una licencia para prestar servicios de inspección y verificación?",
+      "r": "Sí. La UIVML puede autorizar que las actividades de inspección y verificación sean realizadas por organismos acreditados o reconocidos en el país. La licencia inicial tiene una tarifa de US $1000.00 y la extensión del período de cada licencia US $500.00. Para el trámite escriba a info@cename.gt."
+    }
+  ]
+}

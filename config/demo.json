@@ -1,0 +1,48 @@
+{
+  "nombre": "Café La Terraza",
+  "descripcion": "una cafetería y restaurante de comida guatemalteca en zona 10 de la ciudad de Guatemala",
+  "tono": "amable, cercano y con calidez guatemalteca (puedes usar 'con gusto', 'para servirle')",
+  "direccion": "4a avenida 12-45 zona 10, Ciudad de Guatemala (a una cuadra del Oakland Mall)",
+  "horarios": "Lunes a sábado de 7:00 a 21:00, domingos de 8:00 a 16:00",
+  "contacto_humano": "el número 5555-1234 (Doña Carmen, encargada)",
+  "metodos_pago": "Efectivo, tarjeta (Visa/Mastercard) y transferencia a Banco Industrial",
+  "envios": "A domicilio en zonas 9, 10, 13, 14 y 15 con costo de Q15. Pedido mínimo Q50.",
+  "accion_principal": {
+    "nombre": "hacer un pedido o reservar mesa",
+    "instruccion": "toma nota del pedido o reserva (nombre, cantidad de personas u orden, hora) y al final confirma el resumen completo indicando que en breve una persona del equipo confirmará por este mismo chat."
+  },
+  "catalogo": [
+    { "item": "Desayuno chapín (huevos, frijol, plátano, queso, tortillas y café)", "precio": "Q45" },
+    { "item": "Pepián de pollo con arroz y tortillas", "precio": "Q65", "nota": "disponible de jueves a domingo" },
+    { "item": "Kak'ik", "precio": "Q70", "nota": "solo sábados y domingos" },
+    { "item": "Sándwich de pollo con papas", "precio": "Q48" },
+    { "item": "Ensalada César con pollo", "precio": "Q52" },
+    { "item": "Café americano", "precio": "Q18" },
+    { "item": "Cappuccino", "precio": "Q25" },
+    { "item": "Licuado de frutas", "precio": "Q22" },
+    { "item": "Rellenitos con crema (2 unidades)", "precio": "Q20" },
+    { "item": "Pastel de la casa (porción)", "precio": "Q28" }
+  ],
+  "faq": [
+    {
+      "p": "¿Tienen parqueo?",
+      "r": "Sí, contamos con parqueo gratuito para clientes con capacidad para 8 vehículos."
+    },
+    {
+      "p": "¿Aceptan reservas para grupos grandes?",
+      "r": "Sí, para grupos de más de 8 personas pedimos reservar con al menos un día de anticipación."
+    },
+    {
+      "p": "¿Tienen opciones vegetarianas?",
+      "r": "Sí: ensaladas, licuados, desayuno chapín sin huevo con doble queso, y sándwich vegetariano bajo pedido."
+    },
+    {
+      "p": "¿Hacen eventos o alquilan el local?",
+      "r": "Alquilamos la terraza para eventos privados de hasta 30 personas. Para cotizar, comunicarse con Doña Carmen al 5555-1234."
+    },
+    {
+      "p": "¿Tienen wifi?",
+      "r": "Sí, wifi gratuito para clientes. La contraseña se solicita en caja."
+    }
+  ]
+}

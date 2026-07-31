@@ -78,7 +78,13 @@ async function consultarLLM(mensajes) {
             role: m.role === "assistant" ? "model" : "user",
             parts: [{ text: m.content }],
           })),
-          generationConfig: { maxOutputTokens: 700 },
+          generationConfig: {
+            maxOutputTokens: 2000,
+            // Gemini 3.x razona por defecto en nivel HIGH y ese razonamiento
+            // consume tokens de salida. Con un presupuesto bajo la respuesta
+            // sale truncada o vacía. Para consultas de tarifario basta "low".
+            thinkingConfig: { thinkingLevel: process.env.GEMINI_THINKING || "low" },
+          },
         }),
       }
     );
@@ -87,8 +93,19 @@ async function consultarLLM(mensajes) {
       throw new Error(`Gemini API ${resp.status}: ${detalle}`);
     }
     const data = await resp.json();
-    const partes = data.candidates?.[0]?.content?.parts || [];
-    return partes.map((p) => p.text || "").join("").trim();
+    const cand = data.candidates?.[0];
+    const partes = cand?.content?.parts || [];
+    const texto = partes.map((p) => p.text || "").join("").trim();
+
+    // Diagnóstico: si se truncó o vino vacío, queda registrado en los logs
+    if (!texto || (cand?.finishReason && cand.finishReason !== "STOP")) {
+      const u = data.usageMetadata || {};
+      console.warn(
+        `⚠️ Gemini finishReason=${cand?.finishReason} | texto=${texto.length} chars | ` +
+          `tokens: razonamiento=${u.thoughtsTokenCount ?? "?"} salida=${u.candidatesTokenCount ?? "?"}`
+      );
+    }
+    return texto;
   }
 
   // Groq: API compatible con formato OpenAI (key gratis en console.groq.com/keys)
@@ -137,6 +154,10 @@ function construirSystemPrompt(n) {
     `Usa ÚNICAMENTE la información de este documento. Si no sabes algo, dilo con honestidad y deriva al contacto indicado: ${n.contacto_humano}.`,
     `Nunca inventes precios, tarifas, plazos, alcances ni horarios. Si una tarifa no aparece aquí, di que debe consultarse con el laboratorio o área responsable.`,
     `Puedes usar emojis con moderación (1-2 por mensaje).`,
+    `FORMATO DE WHATSAPP: la negrita se escribe con UN solo asterisco (*así*), nunca con dos (**así**), porque los dobles se muestran literalmente al usuario. Para listas usa el guion o el punto medio, no numeración con markdown. No uses encabezados con #.`,
+    `EXACTITUD DE CIFRAS: copia cada monto EXACTAMENTE como aparece en este documento, dígito por dígito, incluyendo los ceros (US $400.00 no es US $40.00). Nunca redondees, abrevies ni recalcules una tarifa.`,
+    `Nunca anuncies una lista para enviarla después ("los rangos son:" y cortar). Si vas a dar una lista, entrégala completa en el mismo mensaje. Si es muy larga, indica cuántos rangos hay y pregunta sobre cuál quiere el detalle.`,
+    `Cuando te pidan "los rangos" o "los alcances" de un servicio, enumera TODOS los que aparecen en el tarifario para esa área, con su tarifa, sin omitir ninguno.`,
   ];
   if (n.accion_principal) {
     reglas.push(
@@ -430,10 +451,22 @@ app.post("/webhook", async (req, res) => {
       .replace(/\[HUMANO\]/gi, "")
       .trim();
 
-    // Guardar en el historial la versión limpia (sin marcadores)
+    // Guardar en el historial la versión limpia (sin marcadores).
+    // Si vino vacía, se descarta el turno del usuario para no corromper el
+    // historial y se avisa en lugar de quedarse en silencio.
+    if (!textoRespuesta) {
+      historial.mensajes.pop(); // quita el turno de usuario sin respuesta
+      await enviarMensaje(
+        telefono,
+        "Disculpe, no pude generar la respuesta en este momento 🙏 ¿Podría repetir su consulta, de preferencia más específica? Si prefiere, puede escribirnos a info@cename.gt."
+      );
+      console.warn(`⚠️ [${telefono}] respuesta vacía del modelo; se envió aviso`);
+      return;
+    }
+
     historial.mensajes.push({ role: "assistant", content: textoRespuesta });
 
-    if (textoRespuesta) await enviarMensaje(telefono, textoRespuesta);
+    await enviarMensaje(telefono, textoRespuesta);
 
     if (pideHumano) {
       pausados.set(telefono, Date.now());

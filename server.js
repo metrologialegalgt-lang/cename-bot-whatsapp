@@ -1,0 +1,499 @@
+// ============================================================
+// Bot de atención al cliente por WhatsApp
+// WhatsApp Cloud API (Meta) + Claude API (Anthropic)
+// ============================================================
+// Arquitectura:
+//   Cliente escribe por WhatsApp -> Meta envía webhook POST aquí
+//   -> se arma el contexto (config del negocio + historial)
+//   -> Claude genera la respuesta -> se envía de vuelta por Graph API
+// ============================================================
+
+require("dotenv").config();
+const express = require("express");
+const fs = require("fs");
+const path = require("path");
+const Anthropic = require("@anthropic-ai/sdk");
+
+const app = express();
+app.use(express.json());
+
+// ------------------------------------------------------------
+// Configuración
+// ------------------------------------------------------------
+const PORT = process.env.PORT || 3000;
+const VERIFY_TOKEN = process.env.VERIFY_TOKEN; // lo inventas tú, se usa al registrar el webhook
+const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN; // token de acceso de Meta
+const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID; // ID del número de WhatsApp (no es el número)
+const BUSINESS_CONFIG = process.env.BUSINESS_CONFIG || "demo"; // qué negocio atiende esta instancia
+
+// Número de WhatsApp del dueño del negocio (solo dígitos con código de país, ej. 50212345678).
+// Recibe notificaciones de pedidos y avisos de "cliente pide humano", y puede enviar comandos.
+const OWNER_PHONE = (process.env.OWNER_PHONE || "").replace(/\D/g, "");
+
+// Proveedor de IA:
+//   "gemini"    -> gratuito, límites de tokens amplios (ideal para prompts grandes)
+//   "groq"      -> gratuito, muy rápido, pero límite de tokens por día bajo
+//   "anthropic" -> de pago, mejor seguimiento de instrucciones
+const LLM_PROVIDER = (process.env.LLM_PROVIDER || "anthropic").toLowerCase();
+const MODELOS_POR_DEFECTO = {
+  groq: "llama-3.3-70b-versatile",
+  gemini: "gemini-3.6-flash",
+  anthropic: process.env.CLAUDE_MODEL || "claude-haiku-4-5",
+};
+const MODEL = process.env.LLM_MODEL || MODELOS_POR_DEFECTO[LLM_PROVIDER];
+
+const anthropic =
+  LLM_PROVIDER === "anthropic"
+    ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    : null;
+
+// Llamada unificada al LLM: recibe el historial, devuelve el texto de respuesta
+async function consultarLLM(mensajes) {
+  if (LLM_PROVIDER === "anthropic") {
+    const respuesta = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 500,
+      system: SYSTEM_PROMPT,
+      messages: mensajes,
+    });
+    return respuesta.content
+      .filter((b) => b.type === "text")
+      .map((b) => b.text)
+      .join("\n");
+  }
+
+  if (LLM_PROVIDER === "gemini") {
+    // Gemini: key gratis en aistudio.google.com/apikey
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "x-goog-api-key": process.env.GEMINI_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents: mensajes.map((m) => ({
+            role: m.role === "assistant" ? "model" : "user",
+            parts: [{ text: m.content }],
+          })),
+          generationConfig: { maxOutputTokens: 700 },
+        }),
+      }
+    );
+    if (!resp.ok) {
+      const detalle = await resp.text();
+      throw new Error(`Gemini API ${resp.status}: ${detalle}`);
+    }
+    const data = await resp.json();
+    const partes = data.candidates?.[0]?.content?.parts || [];
+    return partes.map((p) => p.text || "").join("").trim();
+  }
+
+  // Groq: API compatible con formato OpenAI (key gratis en console.groq.com/keys)
+  const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 500,
+      messages: [{ role: "system", content: SYSTEM_PROMPT }, ...mensajes],
+    }),
+  });
+  if (!resp.ok) {
+    const detalle = await resp.text();
+    throw new Error(`Groq API ${resp.status}: ${detalle}`);
+  }
+  const data = await resp.json();
+  return data.choices[0].message.content;
+}
+
+// Cargar la configuración del negocio (config/<nombre>.json)
+const configPath = path.join(__dirname, "config", `${BUSINESS_CONFIG}.json`);
+const negocio = JSON.parse(fs.readFileSync(configPath, "utf8"));
+console.log(`✅ Config cargada: ${negocio.nombre}`);
+console.log(`🧠 IA: ${LLM_PROVIDER} — modelo: ${MODEL}`);
+
+// ------------------------------------------------------------
+// System prompt: se construye desde el JSON del negocio.
+// Para agregar un cliente nuevo NO se toca el código,
+// solo se crea otro archivo en /config.
+// ------------------------------------------------------------
+function construirSystemPrompt(n) {
+  const secciones = [];
+
+  secciones.push(
+    `Eres el asistente virtual de WhatsApp de "${n.nombre}", ${n.descripcion}.`
+  );
+
+  // --- Reglas base + reglas extra opcionales del JSON ---
+  const reglas = [
+    `Responde SIEMPRE en español, con tono ${n.tono || "amable y cercano"}.`,
+    `Respuestas cortas y claras: esto es WhatsApp, no un correo. Máximo 4-5 líneas salvo que pidan detalle.`,
+    `Usa ÚNICAMENTE la información de este documento. Si no sabes algo, dilo con honestidad y deriva al contacto indicado: ${n.contacto_humano}.`,
+    `Nunca inventes precios, tarifas, plazos, alcances ni horarios. Si una tarifa no aparece aquí, di que debe consultarse con el laboratorio o área responsable.`,
+    `Puedes usar emojis con moderación (1-2 por mensaje).`,
+  ];
+  if (n.accion_principal) {
+    reglas.push(
+      `Si la persona quiere ${n.accion_principal.nombre}, ${n.accion_principal.instruccion}`
+    );
+  }
+  if (Array.isArray(n.reglas_extra)) reglas.push(...n.reglas_extra);
+  secciones.push("REGLAS:\n" + reglas.map((r) => `- ${r}`).join("\n"));
+
+  // --- Datos generales ---
+  const datos = [];
+  if (n.direccion) datos.push(`📍 Dirección: ${n.direccion}`);
+  if (n.horarios) datos.push(`🕐 Horarios: ${n.horarios}`);
+  if (n.contacto_humano) datos.push(`📞 Contacto: ${n.contacto_humano}`);
+  if (n.sitio_web) datos.push(`🌐 Sitio web: ${n.sitio_web}`);
+  if (n.metodos_pago) datos.push(`💳 Forma de pago: ${n.metodos_pago}`);
+  if (n.envios) datos.push(`🚚 Envíos: ${n.envios}`);
+  if (datos.length) secciones.push("INFORMACIÓN GENERAL:\n" + datos.join("\n"));
+
+  // --- Catálogo simple (formato del demo) ---
+  if (Array.isArray(n.catalogo) && n.catalogo.length) {
+    secciones.push(
+      "CATÁLOGO / SERVICIOS:\n" +
+        n.catalogo
+          .map((c) => `- ${c.item}: ${c.precio}${c.nota ? ` (${c.nota})` : ""}`)
+          .join("\n")
+    );
+  }
+
+  // --- Tarifario agrupado por área (formato institucional) ---
+  if (Array.isArray(n.tarifario) && n.tarifario.length) {
+    secciones.push(
+      "TARIFARIO VIGENTE (" +
+        (n.base_legal || "tarifario oficial") +
+        "):\n" +
+        n.tarifario
+          .map(
+            (a) =>
+              `▸ ${a.area}\n` +
+              a.items
+                .map(
+                  (i) =>
+                    `   • ${i.servicio}: ${i.tarifa}${i.nota ? ` — ${i.nota}` : ""}`
+                )
+                .join("\n")
+          )
+          .join("\n\n")
+    );
+  }
+
+  // --- Directorio de derivación ---
+  if (Array.isArray(n.derivaciones) && n.derivaciones.length) {
+    secciones.push(
+      "DIRECTORIO DE DERIVACIÓN (a quién enviar cada solicitud):\n" +
+        n.derivaciones
+          .map(
+            (d) =>
+              `• ${d.area} → ${d.responsable} — ${d.correo}${
+                d.palabras_clave ? ` [temas: ${d.palabras_clave}]` : ""
+              }`
+          )
+          .join("\n") +
+        (n.copia_obligatoria
+          ? `\n\n⚠️ SIEMPRE indica que debe copiarse a ${n.copia_obligatoria} en todo correo, sin excepción.`
+          : "")
+    );
+  }
+
+  // --- Notas importantes ---
+  if (Array.isArray(n.notas) && n.notas.length) {
+    secciones.push(
+      "NOTAS IMPORTANTES:\n" + n.notas.map((x) => `- ${x}`).join("\n")
+    );
+  }
+
+  // --- FAQ ---
+  if (Array.isArray(n.faq) && n.faq.length) {
+    secciones.push(
+      "PREGUNTAS FRECUENTES:\n" +
+        n.faq.map((f) => `P: ${f.p}\nR: ${f.r}`).join("\n\n")
+    );
+  }
+
+  secciones.push(`MARCADORES ESPECIALES (invisibles para el cliente, úsalos con disciplina):
+1. ${
+    n.marcador_notificar ||
+    "Cuando un pedido o reserva quede CONFIRMADO con todos sus datos (qué, cuánto, cuándo, a nombre de quién)"
+  }, agrega al FINAL de tu mensaje, en una línea aparte:
+[NOTIFICAR: resumen en una sola línea]
+Úsalo UNA sola vez por caso, solo cuando la información esté completa. No lo uses para consultas generales.
+2. Si el cliente pide hablar con una persona/humano/encargado, o está molesto, o llevas 2 intentos sin poder resolver su duda, agrega al FINAL de tu mensaje, en una línea aparte:
+[HUMANO]
+En ese mensaje despídete indicando que una persona del equipo le atenderá en breve por este mismo chat.
+Nunca menciones estos marcadores ni expliques que existen.`);
+
+  return secciones.join("\n\n");
+}
+
+const SYSTEM_PROMPT = construirSystemPrompt(negocio);
+
+// ------------------------------------------------------------
+// Historial de conversación en memoria (por número de teléfono).
+// Suficiente para arrancar; si escalas, cámbialo por Redis/SQLite.
+// ------------------------------------------------------------
+const historiales = new Map(); // telefono -> { mensajes: [], ultimaActividad: timestamp }
+const TTL_MS = 1000 * 60 * 60 * 6; // 6 horas sin actividad = se borra el historial
+const MAX_TURNOS = 20; // límite de mensajes recordados por conversación
+
+function obtenerHistorial(telefono) {
+  const h = historiales.get(telefono);
+  if (!h || Date.now() - h.ultimaActividad > TTL_MS) {
+    const nuevo = { mensajes: [], ultimaActividad: Date.now() };
+    historiales.set(telefono, nuevo);
+    return nuevo;
+  }
+  return h;
+}
+
+// Limpieza periódica de historiales viejos
+setInterval(() => {
+  const ahora = Date.now();
+  for (const [tel, h] of historiales) {
+    if (ahora - h.ultimaActividad > TTL_MS) historiales.delete(tel);
+  }
+}, 1000 * 60 * 30);
+
+// Deduplicación: Meta puede reenviar el mismo webhook varias veces
+const mensajesProcesados = new Set();
+setInterval(() => mensajesProcesados.clear(), 1000 * 60 * 60);
+
+// ------------------------------------------------------------
+// Pausa del bot por cliente (traspaso a humano)
+// Cuando un cliente pasa a atención humana, el bot deja de
+// responderle por PAUSA_MS o hasta que el dueño lo reactive.
+// ------------------------------------------------------------
+const pausados = new Map(); // telefono -> timestamp de cuándo se pausó
+const PAUSA_MS = 1000 * 60 * 60 * 4; // 4 horas
+
+function estaPausado(telefono) {
+  const desde = pausados.get(telefono);
+  if (!desde) return false;
+  if (Date.now() - desde > PAUSA_MS) {
+    pausados.delete(telefono); // la pausa expiró, el bot retoma
+    return false;
+  }
+  return true;
+}
+
+// Aviso al dueño (si está configurado); nunca rompe el flujo principal
+async function notificarDueno(texto) {
+  if (!OWNER_PHONE) return;
+  try {
+    await enviarMensaje(OWNER_PHONE, texto);
+  } catch (err) {
+    console.error("⚠️ No se pudo notificar al dueño:", err.message);
+  }
+}
+
+// Comandos que el dueño puede enviar por WhatsApp al número del bot
+async function procesarComandoDueno(texto) {
+  const t = texto.trim().toLowerCase();
+
+  if (t === "estado") {
+    const activos = [...pausados.keys()];
+    return activos.length
+      ? `⏸️ Clientes en atención humana (bot pausado):\n${activos.map((n) => `• +${n}`).join("\n")}\n\nPara reactivar el bot con alguno: activar NUMERO`
+      : "✅ No hay clientes en pausa. El bot atiende a todos.";
+  }
+
+  const mActivar = t.match(/^activar\s+\+?(\d{8,15})$/);
+  if (mActivar) {
+    pausados.delete(mActivar[1]);
+    return `▶️ Bot reactivado para +${mActivar[1]}.`;
+  }
+
+  const mPausar = t.match(/^pausar\s+\+?(\d{8,15})$/);
+  if (mPausar) {
+    pausados.set(mPausar[1], Date.now());
+    return `⏸️ Bot pausado para +${mPausar[1]} (tú atiendes ese chat).`;
+  }
+
+  return `🤖 Comandos disponibles:\n• estado — ver clientes en pausa\n• pausar NUMERO — tomar un chat tú\n• activar NUMERO — devolver el chat al bot\n(NUMERO con código de país, ej. 50212345678)`;
+}
+
+// ------------------------------------------------------------
+// GET /webhook — verificación inicial (Meta lo llama una sola vez
+// cuando registras la URL del webhook en el panel de desarrolladores)
+// ------------------------------------------------------------
+app.get("/webhook", (req, res) => {
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    console.log("✅ Webhook verificado por Meta");
+    return res.status(200).send(challenge);
+  }
+  return res.sendStatus(403);
+});
+
+// ------------------------------------------------------------
+// POST /webhook — llega cada mensaje del cliente
+// ------------------------------------------------------------
+app.post("/webhook", async (req, res) => {
+  // Responder 200 de inmediato: Meta reintenta si tardas más de unos segundos
+  res.sendStatus(200);
+
+  try {
+    const value = req.body?.entry?.[0]?.changes?.[0]?.value;
+    const mensaje = value?.messages?.[0];
+    if (!mensaje) return; // puede ser un status de entrega, se ignora
+
+    // Deduplicar
+    if (mensajesProcesados.has(mensaje.id)) return;
+    mensajesProcesados.add(mensaje.id);
+
+    const telefono = mensaje.from;
+
+    // Solo texto por ahora; para audio/imagen se responde con un aviso
+    let texto;
+    if (mensaje.type === "text") {
+      texto = mensaje.text.body;
+    } else {
+      await enviarMensaje(
+        telefono,
+        "Por el momento solo puedo leer mensajes de texto 🙏 ¿Me escribes tu consulta?"
+      );
+      return;
+    }
+
+    console.log(`📩 [${telefono}]: ${texto}`);
+
+    // ¿Es el dueño escribiéndole al bot? -> modo comandos
+    if (OWNER_PHONE && telefono === OWNER_PHONE) {
+      const respuestaComando = await procesarComandoDueno(texto);
+      await enviarMensaje(telefono, respuestaComando);
+      return;
+    }
+
+    // ¿Este cliente está en atención humana? -> el bot guarda silencio
+    if (estaPausado(telefono)) {
+      console.log(`⏸️ [${telefono}] en pausa (atención humana), no se responde`);
+      return;
+    }
+
+    // Marcar como leído (los checks azules generan confianza)
+    marcarLeido(mensaje.id).catch(() => {});
+
+    // Atajo directo: si el cliente pide explícitamente un humano,
+    // no dependemos del LLM para el traspaso
+    if (/\b(humano|una persona|persona real|asesor|encargado|alguien real)\b/i.test(texto)) {
+      pausados.set(telefono, Date.now());
+      await enviarMensaje(
+        telefono,
+        "¡Claro! 🙋 Una persona de nuestro equipo te atenderá en breve por este mismo chat."
+      );
+      await notificarDueno(
+        `🔔 *Cliente pide atención humana*\n📱 +${telefono}\n💬 Último mensaje: "${texto}"\n\nEl bot quedó pausado para este cliente por 4 horas. Escríbele directamente. Para devolverlo al bot: activar ${telefono}`
+      );
+      console.log(`👤 [${telefono}] traspasado a humano (palabra clave)`);
+      return;
+    }
+
+    // Armar historial y consultar a la IA
+    const historial = obtenerHistorial(telefono);
+    historial.mensajes.push({ role: "user", content: texto });
+    if (historial.mensajes.length > MAX_TURNOS) {
+      historial.mensajes = historial.mensajes.slice(-MAX_TURNOS);
+    }
+    historial.ultimaActividad = Date.now();
+
+    let textoRespuesta = await consultarLLM(historial.mensajes);
+
+    // --- Procesar marcadores especiales de la IA ---
+    // [NOTIFICAR: resumen] -> aviso de pedido/reserva al dueño
+    const mNotificar = textoRespuesta.match(/\[NOTIFICAR:\s*([\s\S]*?)\]/i);
+    if (mNotificar) {
+      await notificarDueno(
+        `🛎️ *Nuevo pedido/reserva*\n📱 Cliente: +${telefono}\n📝 ${mNotificar[1].trim()}\n\nConfírmale por este mismo chat cuando puedas.`
+      );
+      console.log(`🛎️ [${telefono}] pedido notificado al dueño`);
+    }
+
+    // [HUMANO] -> traspaso decidido por la IA
+    const pideHumano = /\[HUMANO\]/i.test(textoRespuesta);
+
+    // Limpiar TODOS los marcadores antes de enviar al cliente
+    textoRespuesta = textoRespuesta
+      .replace(/\[NOTIFICAR:[\s\S]*?\]/gi, "")
+      .replace(/\[HUMANO\]/gi, "")
+      .trim();
+
+    // Guardar en el historial la versión limpia (sin marcadores)
+    historial.mensajes.push({ role: "assistant", content: textoRespuesta });
+
+    if (textoRespuesta) await enviarMensaje(telefono, textoRespuesta);
+
+    if (pideHumano) {
+      pausados.set(telefono, Date.now());
+      await notificarDueno(
+        `🔔 *Cliente necesita atención humana*\n📱 +${telefono}\n💬 Último mensaje del cliente: "${texto}"\n\nEl bot quedó pausado para este cliente por 4 horas. Escríbele directamente. Para devolverlo al bot: activar ${telefono}`
+      );
+      console.log(`👤 [${telefono}] traspasado a humano (decisión de la IA)`);
+    }
+
+    console.log(`📤 [${telefono}]: ${textoRespuesta.slice(0, 80)}...`);
+  } catch (err) {
+    console.error("❌ Error procesando mensaje:", err.message);
+  }
+});
+
+// ------------------------------------------------------------
+// Envío de mensajes por la Graph API de Meta
+// ------------------------------------------------------------
+async function enviarMensaje(telefono, texto) {
+  const resp = await fetch(
+    `https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: telefono,
+        type: "text",
+        text: { body: texto },
+      }),
+    }
+  );
+  if (!resp.ok) {
+    const detalle = await resp.text();
+    throw new Error(`Graph API ${resp.status}: ${detalle}`);
+  }
+}
+
+async function marcarLeido(messageId) {
+  await fetch(`https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      status: "read",
+      message_id: messageId,
+    }),
+  });
+}
+
+// ------------------------------------------------------------
+// Endpoint de salud (útil para Railway/Render y monitoreo)
+// ------------------------------------------------------------
+app.get("/", (_req, res) =>
+  res.send(`🤖 Bot de ${negocio.nombre} activo — ${new Date().toISOString()}`)
+);
+
+app.listen(PORT, () => console.log(`🚀 Servidor escuchando en puerto ${PORT}`));

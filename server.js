@@ -68,18 +68,26 @@ async function consultarLLM(mensajes) {
     // tokens de salida: con presupuesto bajo la respuesta sale vacía. Se intenta
     // con el nivel configurado y, si vuelve vacía, se reintenta una sola vez
     // con razonamiento mínimo y más tokens antes de rendirse.
+    // Los modelos Flash-Lite tienen un defecto conocido: a veces devuelven
+    // respuesta vacía (finishReason MALFORMED_RESPONSE o STOP sin texto).
+    // Por eso el reintento puede hacerse contra un modelo alterno.
     const intentos = [
       {
+        modelo: MODEL,
         nivel: process.env.GEMINI_THINKING || "low",
         tokens: Number(process.env.GEMINI_MAX_TOKENS) || 2000,
       },
-      { nivel: "minimal", tokens: 3000 },
+      {
+        modelo: process.env.LLM_MODEL_FALLBACK || MODEL,
+        nivel: "minimal",
+        tokens: 3000,
+      },
     ];
 
     for (let i = 0; i < intentos.length; i++) {
-      const { nivel, tokens } = intentos[i];
+      const { modelo, nivel, tokens } = intentos[i];
       const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`,
         {
           method: "POST",
           headers: {
@@ -118,7 +126,7 @@ async function consultarLLM(mensajes) {
       const u = data.usageMetadata || {};
       console.warn(
         `⚠️ Gemini vacío (intento ${i + 1}/${intentos.length}) | finishReason=${cand?.finishReason} | ` +
-          `nivel=${nivel} tokens=${tokens} | razonamiento=${u.thoughtsTokenCount ?? "?"} salida=${u.candidatesTokenCount ?? "?"}`
+          `modelo=${modelo} nivel=${nivel} tokens=${tokens} | razonamiento=${u.thoughtsTokenCount ?? "?"} salida=${u.candidatesTokenCount ?? "?"}`
       );
     }
     return "";

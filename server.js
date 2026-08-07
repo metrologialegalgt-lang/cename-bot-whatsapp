@@ -16,6 +16,8 @@ const Anthropic = require("@anthropic-ai/sdk");
 
 const app = express();
 app.use(express.json());
+// Archivos públicos (imagen de la encuesta de satisfacción)
+app.use(express.static(path.join(__dirname, "public")));
 
 // ------------------------------------------------------------
 // Configuración
@@ -26,9 +28,16 @@ const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN; // token de acceso de Meta
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID; // ID del número de WhatsApp (no es el número)
 const BUSINESS_CONFIG = process.env.BUSINESS_CONFIG || "demo"; // qué negocio atiende esta instancia
 
-// Número de WhatsApp del dueño del negocio (solo dígitos con código de país, ej. 50212345678).
-// Recibe notificaciones de pedidos y avisos de "cliente pide humano", y puede enviar comandos.
-const OWNER_PHONE = (process.env.OWNER_PHONE || "").replace(/\D/g, "");
+// Imagen de encuesta de satisfacción que se envía al cerrar la conversación.
+// Se sirve desde este mismo servidor (carpeta /public). Para desactivarla,
+// deja ENCUESTA_URL vacía.
+const BASE_URL = (process.env.BASE_URL || "").replace(/\/$/, "");
+const ENCUESTA_URL =
+  process.env.ENCUESTA_URL ||
+  (BASE_URL ? `${BASE_URL}/evaluacion.jpg` : "");
+const ENCUESTA_TEXTO =
+  process.env.ENCUESTA_TEXTO ||
+  "Gracias por comunicarse con el CENAME 🙌 Su opinión nos ayuda a mejorar: escanee el código para responder nuestra breve evaluación del servicio.";
 
 // Proveedor de IA:
 //   "gemini"    -> gratuito, límites de tokens amplios (ideal para prompts grandes)
@@ -276,17 +285,11 @@ function construirSystemPrompt(n) {
     );
   }
 
-  secciones.push(`MARCADORES ESPECIALES (invisibles para el cliente, úsalos con disciplina):
-1. ${
-    n.marcador_notificar ||
-    "Cuando un pedido o reserva quede CONFIRMADO con todos sus datos (qué, cuánto, cuándo, a nombre de quién)"
-  }, agrega al FINAL de tu mensaje, en una línea aparte:
-[NOTIFICAR: resumen en una sola línea]
-Úsalo UNA sola vez por caso, solo cuando la información esté completa. No lo uses para consultas generales.
-2. Si el cliente pide hablar con una persona/humano/encargado, o está molesto, o llevas 2 intentos sin poder resolver su duda, agrega al FINAL de tu mensaje, en una línea aparte:
-[HUMANO]
-En ese mensaje despídete indicando que una persona del equipo le atenderá en breve por este mismo chat.
-Nunca menciones estos marcadores ni expliques que existen.`);
+  secciones.push(`MARCADOR ESPECIAL (invisible para la persona, úsalo con disciplina):
+Cuando la conversación haya concluido —porque la persona se despide, agradece, dice que ya no necesita nada, o porque ya le entregaste la información y la derivación que pedía— agrega al FINAL de tu mensaje, en una línea aparte:
+[ENCUESTA]
+Úsalo UNA sola vez por conversación y solo al cerrar. No lo uses si la persona todavía tiene dudas pendientes.
+Nunca menciones este marcador ni expliques que existe.`);
 
   return secciones.join("\n\n");
 }
@@ -324,58 +327,18 @@ const mensajesProcesados = new Set();
 setInterval(() => mensajesProcesados.clear(), 1000 * 60 * 60);
 
 // ------------------------------------------------------------
-// Pausa del bot por cliente (traspaso a humano)
-// Cuando un cliente pasa a atención humana, el bot deja de
-// responderle por PAUSA_MS o hasta que el dueño lo reactive.
+// Control de envío de la encuesta: una sola vez por conversación
 // ------------------------------------------------------------
-const pausados = new Map(); // telefono -> timestamp de cuándo se pausó
-const PAUSA_MS = 1000 * 60 * 60 * 4; // 4 horas
-
-function estaPausado(telefono) {
-  const desde = pausados.get(telefono);
-  if (!desde) return false;
-  if (Date.now() - desde > PAUSA_MS) {
-    pausados.delete(telefono); // la pausa expiró, el bot retoma
-    return false;
-  }
-  return true;
-}
-
-// Aviso al dueño (si está configurado); nunca rompe el flujo principal
-async function notificarDueno(texto) {
-  if (!OWNER_PHONE) return;
+async function enviarEncuesta(telefono) {
+  if (!ENCUESTA_URL) return;
   try {
-    await enviarMensaje(OWNER_PHONE, texto);
+    await enviarImagen(telefono, ENCUESTA_URL, ENCUESTA_TEXTO);
+    console.log(`📋 [${telefono}] encuesta de satisfacción enviada`);
   } catch (err) {
-    console.error("⚠️ No se pudo notificar al dueño:", err.message);
+    console.error("⚠️ No se pudo enviar la encuesta:", err.message);
   }
 }
 
-// Comandos que el dueño puede enviar por WhatsApp al número del bot
-async function procesarComandoDueno(texto) {
-  const t = texto.trim().toLowerCase();
-
-  if (t === "estado") {
-    const activos = [...pausados.keys()];
-    return activos.length
-      ? `⏸️ Clientes en atención humana (bot pausado):\n${activos.map((n) => `• +${n}`).join("\n")}\n\nPara reactivar el bot con alguno: activar NUMERO`
-      : "✅ No hay clientes en pausa. El bot atiende a todos.";
-  }
-
-  const mActivar = t.match(/^activar\s+\+?(\d{8,15})$/);
-  if (mActivar) {
-    pausados.delete(mActivar[1]);
-    return `▶️ Bot reactivado para +${mActivar[1]}.`;
-  }
-
-  const mPausar = t.match(/^pausar\s+\+?(\d{8,15})$/);
-  if (mPausar) {
-    pausados.set(mPausar[1], Date.now());
-    return `⏸️ Bot pausado para +${mPausar[1]} (tú atiendes ese chat).`;
-  }
-
-  return `🤖 Comandos disponibles:\n• estado — ver clientes en pausa\n• pausar NUMERO — tomar un chat tú\n• activar NUMERO — devolver el chat al bot\n(NUMERO con código de país, ej. 50212345678)`;
-}
 
 // ------------------------------------------------------------
 // GET /webhook — verificación inicial (Meta lo llama una sola vez
@@ -425,36 +388,8 @@ app.post("/webhook", async (req, res) => {
 
     console.log(`📩 [${telefono}]: ${texto}`);
 
-    // ¿Es el dueño escribiéndole al bot? -> modo comandos
-    if (OWNER_PHONE && telefono === OWNER_PHONE) {
-      const respuestaComando = await procesarComandoDueno(texto);
-      await enviarMensaje(telefono, respuestaComando);
-      return;
-    }
-
-    // ¿Este cliente está en atención humana? -> el bot guarda silencio
-    if (estaPausado(telefono)) {
-      console.log(`⏸️ [${telefono}] en pausa (atención humana), no se responde`);
-      return;
-    }
-
     // Marcar como leído (los checks azules generan confianza)
     marcarLeido(mensaje.id).catch(() => {});
-
-    // Atajo directo: si el cliente pide explícitamente un humano,
-    // no dependemos del LLM para el traspaso
-    if (/\b(humano|una persona|persona real|asesor|encargado|alguien real)\b/i.test(texto)) {
-      pausados.set(telefono, Date.now());
-      await enviarMensaje(
-        telefono,
-        "¡Claro! 🙋 Una persona de nuestro equipo te atenderá en breve por este mismo chat."
-      );
-      await notificarDueno(
-        `🔔 *Cliente pide atención humana*\n📱 +${telefono}\n💬 Último mensaje: "${texto}"\n\nEl bot quedó pausado para este cliente por 4 horas. Escríbele directamente. Para devolverlo al bot: activar ${telefono}`
-      );
-      console.log(`👤 [${telefono}] traspasado a humano (palabra clave)`);
-      return;
-    }
 
     // Armar historial y consultar a la IA
     const historial = obtenerHistorial(telefono);
@@ -466,30 +401,16 @@ app.post("/webhook", async (req, res) => {
 
     let textoRespuesta = await consultarLLM(historial.mensajes);
 
-    // --- Procesar marcadores especiales de la IA ---
-    // [NOTIFICAR: resumen] -> aviso de pedido/reserva al dueño
-    const mNotificar = textoRespuesta.match(/\[NOTIFICAR:\s*([\s\S]*?)\]/i);
-    if (mNotificar) {
-      await notificarDueno(
-        `🛎️ *Nuevo pedido/reserva*\n📱 Cliente: +${telefono}\n📝 ${mNotificar[1].trim()}\n\nConfírmale por este mismo chat cuando puedas.`
-      );
-      console.log(`🛎️ [${telefono}] pedido notificado al dueño`);
-    }
+    // --- Marcador [ENCUESTA]: la IA indica que la conversación concluyó ---
+    const cierraConversacion = /\[ENCUESTA\]/i.test(textoRespuesta);
 
-    // [HUMANO] -> traspaso decidido por la IA
-    const pideHumano = /\[HUMANO\]/i.test(textoRespuesta);
+    // Limpiar marcadores antes de enviar al ciudadano
+    textoRespuesta = textoRespuesta.replace(/\[ENCUESTA\]/gi, "").trim();
 
-    // Limpiar TODOS los marcadores antes de enviar al cliente
-    textoRespuesta = textoRespuesta
-      .replace(/\[NOTIFICAR:[\s\S]*?\]/gi, "")
-      .replace(/\[HUMANO\]/gi, "")
-      .trim();
-
-    // Guardar en el historial la versión limpia (sin marcadores).
     // Si vino vacía, se descarta el turno del usuario para no corromper el
     // historial y se avisa en lugar de quedarse en silencio.
     if (!textoRespuesta) {
-      historial.mensajes.pop(); // quita el turno de usuario sin respuesta
+      historial.mensajes.pop();
       await enviarMensaje(
         telefono,
         "Disculpe, no pude generar la respuesta en este momento 🙏 ¿Podría repetir su consulta, de preferencia más específica? Si prefiere, puede escribirnos a info@cename.gt."
@@ -499,15 +420,13 @@ app.post("/webhook", async (req, res) => {
     }
 
     historial.mensajes.push({ role: "assistant", content: textoRespuesta });
-
     await enviarMensaje(telefono, textoRespuesta);
 
-    if (pideHumano) {
-      pausados.set(telefono, Date.now());
-      await notificarDueno(
-        `🔔 *Cliente necesita atención humana*\n📱 +${telefono}\n💬 Último mensaje del cliente: "${texto}"\n\nEl bot quedó pausado para este cliente por 4 horas. Escríbele directamente. Para devolverlo al bot: activar ${telefono}`
-      );
-      console.log(`👤 [${telefono}] traspasado a humano (decisión de la IA)`);
+    // Encuesta de satisfacción: una sola vez por conversación, al cerrar
+    const despedida = /\b(gracias|muchas gracias|adi[oó]s|hasta luego|eso es todo|es todo|nada m[aá]s|listo)\b/i.test(texto);
+    if ((cierraConversacion || despedida) && !historial.encuestaEnviada) {
+      historial.encuestaEnviada = true;
+      await enviarEncuesta(telefono);
     }
 
     console.log(`📤 [${telefono}]: ${textoRespuesta.slice(0, 80)}...`);
@@ -524,9 +443,7 @@ app.post("/webhook", async (req, res) => {
           tel,
           "En este momento estamos atendiendo muchas consultas y no puedo responderle de inmediato 🙏 Por favor intente de nuevo en unos minutos, o escríbanos a info@cename.gt y le atenderemos con gusto."
         );
-        await notificarDueno(
-          "🚨 *Cuota del servicio de IA agotada*\nEl bot no puede responder consultas en este momento. Revise el plan del proveedor de IA en la consola.\n\nA los ciudadanos se les está enviando un aviso para que reintenten o escriban a info@cename.gt."
-        );
+        console.error("🚨 CUOTA DEL SERVICIO DE IA AGOTADA — revise el plan del proveedor");
       } else {
         await enviarMensaje(
           tel,
@@ -562,6 +479,29 @@ async function enviarMensaje(telefono, texto) {
   if (!resp.ok) {
     const detalle = await resp.text();
     throw new Error(`Graph API ${resp.status}: ${detalle}`);
+  }
+}
+
+async function enviarImagen(telefono, urlImagen, pie) {
+  const resp = await fetch(
+    `https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: telefono,
+        type: "image",
+        image: { link: urlImagen, caption: pie },
+      }),
+    }
+  );
+  if (!resp.ok) {
+    const detalle = await resp.text();
+    throw new Error(`Graph API (imagen) ${resp.status}: ${detalle}`);
   }
 }
 

@@ -510,5 +510,23 @@
       "p": "¿Prestan todos los servicios del tarifario del Acuerdo Gubernativo 173-2021?",
       "r": "Por el momento no. El CENAME presta los servicios para los que cuenta con capacidad instalada vigente, que son los que aparecen en este listado con sus intervalos de medición. Si el servicio que necesita no aparece, escriba a info@cename.gt para orientarle sobre alternativas."
     }
+  ],
+  "servicios_no_disponibles": [
+    "Máquinas de tensión o compresión y cualquier servicio de FUERZA (celdas de carga, dinamómetros)",
+    "Presión absoluta, monitores de presión arterial no invasivos, transductores neumáticos 0,01 % y balanzas de presión de peso muerto",
+    "Densidad: densímetros de inmersión y oscilatorios, determinación de densidad de sólidos y líquidos",
+    "Materiales de referencia de pH y de conductividad eléctrica",
+    "Fisicoquímica: conductividad, espectrofotómetros, polarímetros y refractómetros",
+    "Termopares y termómetros de resistencia de platino industrial (PRT)",
+    "Viscosidad cinemática (solo se atienden viscosímetros capilares)",
+    "Tiempo y frecuencia: relojes, tacómetros ópticos, frecuencímetros, centrífugas, sintetizadores, contadores de intervalos, patrones de frecuencia y calibración remota por vista común",
+    "Variables eléctricas de mediana y alta exactitud, calibradores de procesos y generadores de señales, frecuencia y capacitancia",
+    "Micropipetas de una sola medida, graduadas y multicanal",
+    "Contenedores volumétricos por método volumétrico, capacidades mayores a 20 L y camiones cisterna",
+    "Dimensional: calibres de altura, calibres de profundidad, micrómetros de exterior con topes intercambiables, micrómetros de profundidad, micrómetros de interior, cabezales micrométricos, relojes comparadores y palpadores, alesómetros",
+    "Longitud: cintas métricas, cintas de diámetro, reglas metálicas, mesas de granito y bloques patrón",
+    "Metrología legal: verificaciones INICIALES (solo se realizan verificaciones periódicas)",
+    "Instalación de marchamos",
+    "Licencias para organismos de inspección y verificación"
   ]
 }

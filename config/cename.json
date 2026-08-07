@@ -17,9 +17,10 @@
     "Distingue con claridad dos cosas distintas: CALIBRACIÓN (servicio del Laboratorio Nacional de Metrología, voluntario, con certificado) y VERIFICACIÓN (actividad oficial de la UIVML en instrumentos sujetos a control metrológico legal, como dispensadores de combustible, medidores de agua, medidores de energía eléctrica y contenido neto de preempacados).",
     "Si la consulta es una denuncia ciudadana (por ejemplo sospecha de que un dispensador de combustible o una balanza no despacha la cantidad correcta), tómala con seriedad, pide los datos del establecimiento y deriva a la unidad correspondiente con copia a info@cename.gt.",
     "No opines sobre casos en trámite, resoluciones, sanciones ni asuntos legales; deriva esas consultas a info@cename.gt.",
-    "No solicites datos personales innecesarios: basta el nombre de la persona o empresa, el instrumento y un correo de contacto."
+    "No solicites datos personales innecesarios: basta el nombre de la persona o empresa, el instrumento y un correo de contacto.",
+    "QUEJAS Y RECLAMOS: si la persona expresa una queja, inconformidad o reclamo sobre el servicio, la atención recibida o el personal, escúchala con respeto, no la minimices, no opines sobre responsabilidades y NO prometas soluciones. Indícale que para dar seguimiento formal debe escribir a info@cename.gt detallando lo ocurrido, y que ahí se canalizará a la instancia correspondiente.",
+    "Si la persona pide hablar con una persona o con un asesor, indícale amablemente que este canal es automatizado y que puede escribir a info@cename.gt o al correo del laboratorio correspondiente, donde le atenderá personal del CENAME. Continúa atendiendo sus consultas normalmente."
   ],
-  "marcador_notificar": "Cuando una persona haya manifestado intención de solicitar un servicio y ya le hayas indicado el laboratorio y correo de derivación (con los datos mínimos: instrumento/servicio, nombre o empresa, y área derivada)",
   "tarifario": [
     {
       "area": "Masa — calibración de masas OIML (por pieza calibrada)",
@@ -222,7 +223,7 @@
         {
           "servicio": "Termómetros de líquido en vidrio, digitales y bimetálicos de más de 0 °C hasta 100 °C",
           "tarifa": "US $30.00",
-          "nota": "punto adicional US $10.00"
+          "nota": "punto adicional US $10.00. OPCIÓN CON HUMEDAD: se puede calibrar termómetros digitales que incorporen medición de humedad, en el intervalo de 10 °C a 40 °C y de 20 %HR a 80 %HR; se pagan los US $30.00 por cuatro puntos más 2 puntos adicionales, quedando la tarifa total en US $50.00, distribuidos en 3 puntos para temperatura y 3 puntos para humedad"
         },
         {
           "servicio": "Termómetros de líquido en vidrio, digitales y bimetálicos de más de 100 °C hasta 300 °C",
@@ -230,7 +231,7 @@
           "nota": "punto adicional US $10.00"
         }
       ],
-      "nota": "El alcance disponible cubre termómetros de líquido en vidrio, digitales y bimetálicos de -20 °C a 300 °C."
+      "nota": "El alcance disponible cubre termómetros de líquido en vidrio, digitales y bimetálicos de -20 °C a 300 °C. Además se ofrece calibración de humedad relativa únicamente en termómetros digitales que la incorporen, de 10 °C a 40 °C y de 20 %HR a 80 %HR."
     },
     {
       "area": "Tiempo y frecuencia",
@@ -421,7 +422,7 @@
       "area": "Laboratorio de Termómetros de Líquido en Vidrio y Termorresistencias",
       "responsable": "Ing. Alan Fernando Figueroa",
       "correo": "affigueroar@mineco.gob.gt",
-      "palabras_clave": "termómetros de líquido en vidrio, termómetros digitales y bimetálicos de -20 °C a 300 °C"
+      "palabras_clave": "termómetros de líquido en vidrio, termómetros digitales y bimetálicos de -20 °C a 300 °C, termohigrómetros y termómetros digitales con medición de humedad relativa"
     },
     {
       "area": "Laboratorio de Materiales de Referencia y Laboratorio de Viscosidad",
@@ -509,6 +510,10 @@
     {
       "p": "¿Prestan todos los servicios del tarifario del Acuerdo Gubernativo 173-2021?",
       "r": "Por el momento no. El CENAME presta los servicios para los que cuenta con capacidad instalada vigente, que son los que aparecen en este listado con sus intervalos de medición. Si el servicio que necesita no aparece, escriba a info@cename.gt para orientarle sobre alternativas."
+    },
+    {
+      "p": "¿Cómo puedo presentar una queja o sugerencia?",
+      "r": "Puede escribir a info@cename.gt detallando lo ocurrido, con fecha y datos de contacto, para que su caso se canalice a la instancia correspondiente."
     }
   ],
   "servicios_no_disponibles": [

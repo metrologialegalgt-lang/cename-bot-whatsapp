@@ -64,48 +64,64 @@ async function consultarLLM(mensajes) {
 
   if (LLM_PROVIDER === "gemini") {
     // Gemini: key gratis en aistudio.google.com/apikey
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
+    // Gemini 3.x razona por defecto en nivel HIGH y ese razonamiento consume
+    // tokens de salida: con presupuesto bajo la respuesta sale vacía. Se intenta
+    // con el nivel configurado y, si vuelve vacía, se reintenta una sola vez
+    // con razonamiento mínimo y más tokens antes de rendirse.
+    const intentos = [
       {
-        method: "POST",
-        headers: {
-          "x-goog-api-key": process.env.GEMINI_API_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: mensajes.map((m) => ({
-            role: m.role === "assistant" ? "model" : "user",
-            parts: [{ text: m.content }],
-          })),
-          generationConfig: {
-            maxOutputTokens: 2000,
-            // Gemini 3.x razona por defecto en nivel HIGH y ese razonamiento
-            // consume tokens de salida. Con un presupuesto bajo la respuesta
-            // sale truncada o vacía. Para consultas de tarifario basta "low".
-            thinkingConfig: { thinkingLevel: process.env.GEMINI_THINKING || "low" },
-          },
-        }),
-      }
-    );
-    if (!resp.ok) {
-      const detalle = await resp.text();
-      throw new Error(`Gemini API ${resp.status}: ${detalle}`);
-    }
-    const data = await resp.json();
-    const cand = data.candidates?.[0];
-    const partes = cand?.content?.parts || [];
-    const texto = partes.map((p) => p.text || "").join("").trim();
+        nivel: process.env.GEMINI_THINKING || "low",
+        tokens: Number(process.env.GEMINI_MAX_TOKENS) || 2000,
+      },
+      { nivel: "minimal", tokens: 3000 },
+    ];
 
-    // Diagnóstico: si se truncó o vino vacío, queda registrado en los logs
-    if (!texto || (cand?.finishReason && cand.finishReason !== "STOP")) {
+    for (let i = 0; i < intentos.length; i++) {
+      const { nivel, tokens } = intentos[i];
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
+        {
+          method: "POST",
+          headers: {
+            "x-goog-api-key": process.env.GEMINI_API_KEY,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            contents: mensajes.map((m) => ({
+              role: m.role === "assistant" ? "model" : "user",
+              parts: [{ text: m.content }],
+            })),
+            generationConfig: {
+              maxOutputTokens: tokens,
+              thinkingConfig: { thinkingLevel: nivel },
+            },
+          }),
+        }
+      );
+
+      if (!resp.ok) {
+        const detalle = await resp.text();
+        // 429 = cuota agotada o demasiadas solicitudes por minuto.
+        const err = new Error(`Gemini API ${resp.status}: ${detalle}`);
+        if (resp.status === 429) err.cuotaAgotada = true;
+        throw err;
+      }
+
+      const data = await resp.json();
+      const cand = data.candidates?.[0];
+      const partes = cand?.content?.parts || [];
+      const texto = partes.map((p) => p.text || "").join("").trim();
+
+      if (texto) return texto;
+
       const u = data.usageMetadata || {};
       console.warn(
-        `⚠️ Gemini finishReason=${cand?.finishReason} | texto=${texto.length} chars | ` +
-          `tokens: razonamiento=${u.thoughtsTokenCount ?? "?"} salida=${u.candidatesTokenCount ?? "?"}`
+        `⚠️ Gemini vacío (intento ${i + 1}/${intentos.length}) | finishReason=${cand?.finishReason} | ` +
+          `nivel=${nivel} tokens=${tokens} | razonamiento=${u.thoughtsTokenCount ?? "?"} salida=${u.candidatesTokenCount ?? "?"}`
       );
     }
-    return texto;
+    return "";
   }
 
   // Groq: API compatible con formato OpenAI (key gratis en console.groq.com/keys)
@@ -123,7 +139,9 @@ async function consultarLLM(mensajes) {
   });
   if (!resp.ok) {
     const detalle = await resp.text();
-    throw new Error(`Groq API ${resp.status}: ${detalle}`);
+    const err = new Error(`Groq API ${resp.status}: ${detalle}`);
+    if (resp.status === 429) err.cuotaAgotada = true;
+    throw err;
   }
   const data = await resp.json();
   return data.choices[0].message.content;
@@ -206,6 +224,14 @@ function construirSystemPrompt(n) {
               (a.nota ? `\n   ⚠ ${a.nota}` : "")
           )
           .join("\n\n")
+    );
+  }
+
+  // --- Servicios que NO se prestan actualmente ---
+  if (Array.isArray(n.servicios_no_disponibles) && n.servicios_no_disponibles.length) {
+    secciones.push(
+      "SERVICIOS NO DISPONIBLES ACTUALMENTE (si preguntan por alguno, dilo directamente sin buscar en el tarifario y ofrece info@cename.gt; NO inventes tarifa):\n" +
+        n.servicios_no_disponibles.map((x) => `✗ ${x}`).join("\n")
     );
   }
 
@@ -479,6 +505,29 @@ app.post("/webhook", async (req, res) => {
     console.log(`📤 [${telefono}]: ${textoRespuesta.slice(0, 80)}...`);
   } catch (err) {
     console.error("❌ Error procesando mensaje:", err.message);
+
+    // Nunca dejar al ciudadano sin respuesta: se le avisa y, si fue por
+    // cuota agotada, se alerta al responsable operativo.
+    const tel = req.body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from;
+    if (!tel) return;
+    try {
+      if (err.cuotaAgotada) {
+        await enviarMensaje(
+          tel,
+          "En este momento estamos atendiendo muchas consultas y no puedo responderle de inmediato 🙏 Por favor intente de nuevo en unos minutos, o escríbanos a info@cename.gt y le atenderemos con gusto."
+        );
+        await notificarDueno(
+          "🚨 *Cuota del servicio de IA agotada*\nEl bot no puede responder consultas en este momento. Revise el plan del proveedor de IA en la consola.\n\nA los ciudadanos se les está enviando un aviso para que reintenten o escriban a info@cename.gt."
+        );
+      } else {
+        await enviarMensaje(
+          tel,
+          "Disculpe, tuvimos un inconveniente técnico al procesar su consulta 🙏 Por favor intente de nuevo, o escríbanos a info@cename.gt."
+        );
+      }
+    } catch (e2) {
+      console.error("❌ Tampoco se pudo enviar el aviso de error:", e2.message);
+    }
   }
 });
 

@@ -430,20 +430,29 @@ app.post("/webhook", async (req, res) => {
     historial.mensajes.push({ role: "assistant", content: textoRespuesta });
     await enviarMensaje(telefono, textoRespuesta);
 
-    // Encuesta de satisfacción
-    // a) Si la persona la pide explícitamente, se envía siempre (aunque ya se
-    //    haya enviado antes en esta conversación).
+    // Encuesta de satisfacción — tres disparadores
+    // a) La persona la pide. Se usan raíces de palabra (calific*, evalú*,
+    //    opini*...) para cubrir todas las variantes: "calificar",
+    //    "calificación", "evaluación", "evalúo", "opinión", "sugerencias".
     const pideEncuesta =
-      /\b(qr|c[oó]digo qr|encuesta|evaluaci[oó]n|evaluar|calificar|puntuar|opinar|sugerencia)\b/i.test(
+      /(\bqr\b|encuesta|eval[uú]|calific|puntu|opini|opinar|sugerenc|coment)/i.test(
         texto
       );
-    // b) Envío automático al cerrar: una sola vez por conversación.
+
+    // b) El bot PROMETIÓ enviarla en su respuesta. Si lo dice, hay que
+    //    cumplirlo: nunca debe prometer el código y no mandarlo.
+    const prometioEncuesta =
+      /(c[oó]digo qr|\bqr\b|evaluaci[oó]n del servicio|breve evaluaci[oó]n|encuesta)/i.test(
+        textoRespuesta
+      );
+
+    // c) Cierre de conversación: una sola vez por conversación.
     const despedida =
       /\b(gracias|muchas gracias|adi[oó]s|hasta luego|eso es todo|es todo|nada m[aá]s|listo)\b/i.test(
         texto
       );
 
-    if (pideEncuesta) {
+    if (pideEncuesta || prometioEncuesta) {
       historial.encuestaEnviada = true;
       await enviarEncuesta(telefono);
     } else if ((cierraConversacion || despedida) && !historial.encuestaEnviada) {

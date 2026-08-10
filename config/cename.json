@@ -560,5 +560,6 @@
     "Metrología legal: verificaciones INICIALES (solo se realizan verificaciones periódicas)",
     "Instalación de marchamos",
     "Licencias para organismos de inspección y verificación"
-  ]
+  ],
+  "encuesta_satisfaccion": "El CENAME cuenta con una breve evaluación del servicio que se envía como imagen con código QR. Si la persona pregunta si existe una encuesta, un código QR, cómo calificar el servicio o cómo dejar su opinión, confirma que SÍ existe y dile que le envías el código enseguida para que lo escanee. Nunca digas que no se cuenta con encuesta ni con código QR."
 }

@@ -276,7 +276,10 @@ function construirSystemPrompt(n) {
       "NOTAS IMPORTANTES:\n" + n.notas.map((x) => `- ${x}`).join("\n")
     );
   }
-
+  // --- Encuesta de satisfacción ---
+  if (n.encuesta_satisfaccion) {
+    secciones.push("ENCUESTA DE SATISFACCIÓN:\n" + n.encuesta_satisfaccion);
+  }
   // --- FAQ ---
   if (Array.isArray(n.faq) && n.faq.length) {
     secciones.push(
@@ -330,7 +333,12 @@ setInterval(() => mensajesProcesados.clear(), 1000 * 60 * 60);
 // Control de envío de la encuesta: una sola vez por conversación
 // ------------------------------------------------------------
 async function enviarEncuesta(telefono) {
-  if (!ENCUESTA_URL) return;
+  if (!ENCUESTA_URL) {
+    console.warn(
+      "⚠️ Encuesta no enviada: falta configurar BASE_URL (o ENCUESTA_URL) en las variables de entorno"
+    );
+    return;
+  }
   try {
     await enviarImagen(telefono, ENCUESTA_URL, ENCUESTA_TEXTO);
     console.log(`📋 [${telefono}] encuesta de satisfacción enviada`);
@@ -422,9 +430,23 @@ app.post("/webhook", async (req, res) => {
     historial.mensajes.push({ role: "assistant", content: textoRespuesta });
     await enviarMensaje(telefono, textoRespuesta);
 
-    // Encuesta de satisfacción: una sola vez por conversación, al cerrar
-    const despedida = /\b(gracias|muchas gracias|adi[oó]s|hasta luego|eso es todo|es todo|nada m[aá]s|listo)\b/i.test(texto);
-    if ((cierraConversacion || despedida) && !historial.encuestaEnviada) {
+    // Encuesta de satisfacción
+    // a) Si la persona la pide explícitamente, se envía siempre (aunque ya se
+    //    haya enviado antes en esta conversación).
+    const pideEncuesta =
+      /\b(qr|c[oó]digo qr|encuesta|evaluaci[oó]n|evaluar|calificar|puntuar|opinar|sugerencia)\b/i.test(
+        texto
+      );
+    // b) Envío automático al cerrar: una sola vez por conversación.
+    const despedida =
+      /\b(gracias|muchas gracias|adi[oó]s|hasta luego|eso es todo|es todo|nada m[aá]s|listo)\b/i.test(
+        texto
+      );
+
+    if (pideEncuesta) {
+      historial.encuestaEnviada = true;
+      await enviarEncuesta(telefono);
+    } else if ((cierraConversacion || despedida) && !historial.encuestaEnviada) {
       historial.encuestaEnviada = true;
       await enviarEncuesta(telefono);
     }

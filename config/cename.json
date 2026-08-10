@@ -10,6 +10,7 @@
   "reglas_extra": [
     "Tu función es informar y derivar. NO cotizas formalmente, NO agendas, NO comprometes plazos ni disponibilidad de equipo: eso lo hace el laboratorio o unidad responsable.",
     "Cuando la persona quiera solicitar un servicio, una cotización formal o agendar, identifica el laboratorio correcto según el instrumento o servicio y entrégale el nombre del responsable y su correo, indicando SIEMPRE que debe copiar a info@cename.gt.",
+    "CAPACITACIONES: los cursos con precio publicado se informan con su tarifa exacta tal como aparece en el listado. Si preguntan por un curso a medida, con otra duración o para un grupo, NO calcules el monto: indica la tarifa base de US $25.00 hora/hombre por participante y que la cotización formal la emite el CENAME, derivando a info@cename.gt.",
     "Si la persona describe un instrumento que no logras ubicar en el tarifario, no adivines el área: pide una descripción breve (qué mide, marca/modelo, intervalo o capacidad) antes de derivar.",
     "ALCANCE ACTUAL: el listado de tarifas incluye SOLO los servicios que el CENAME puede prestar hoy. Si preguntan por un servicio o intervalo que no aparece (por ejemplo densidad, materiales de referencia, termopares, cintas métricas, bloques patrón, fuerza, marchamos o verificaciones iniciales), NO inventes tarifa: explica con amabilidad que ese servicio no está disponible por el momento, y ofrece escribir a info@cename.gt para consultar alternativas o ser notificado cuando se habilite.",
     "Verifica siempre que el instrumento de la persona esté DENTRO del intervalo indicado. Si excede el alcance (por ejemplo un micrómetro de 300 mm, cuando solo se atiende hasta 150 mm), indícalo con claridad en lugar de dar una tarifa que no aplica.",
@@ -389,14 +390,36 @@
       ]
     },
     {
-      "area": "Capacitación",
+      "area": "Capacitación — cursos disponibles",
       "articulo": "Artículo 20",
       "items": [
         {
-          "servicio": "Capacitación de recurso humano en materia de metrología",
-          "tarifa": "US $25.00 hora/hombre por persona participante"
+          "servicio": "Metrología Básica (5 horas)",
+          "tarifa": "US $125.00 por persona"
+        },
+        {
+          "servicio": "Interpretación de Certificados de Calibración (2,5 horas)",
+          "tarifa": "US $62.50 por persona"
+        },
+        {
+          "servicio": "Introducción a la Metrología de Viscosidad (6 horas)",
+          "tarifa": "US $150.00 por participante"
+        },
+        {
+          "servicio": "Introducción a la Metrología de Presión (5 horas)",
+          "tarifa": "US $125.00 por participante"
+        },
+        {
+          "servicio": "Introducción a la Calibración de Multímetros (6 horas)",
+          "tarifa": "US $150.00 por participante"
+        },
+        {
+          "servicio": "Otros temas de metrología a solicitud",
+          "tarifa": "US $25.00 hora/hombre por persona participante",
+          "nota": "tarifa base del Artículo 20; el costo depende de la duración del curso"
         }
-      ]
+      ],
+      "nota": "Todos los cursos se cotizan sobre la tarifa de US $25.00 hora/hombre por participante. Para programar una capacitación o consultar fechas disponibles, escriba a info@cename.gt."
     }
   ],
   "derivaciones": [
@@ -506,6 +529,10 @@
     {
       "p": "¿Ofrecen capacitaciones en metrología?",
       "r": "Sí, el CENAME brinda servicios de capacitación de recurso humano en materia de metrología, con una tarifa de US $25.00 hora/hombre por persona participante. Para programar una capacitación puede escribir a info@cename.gt."
+    },
+    {
+      "p": "¿Qué cursos de capacitación tienen disponibles?",
+      "r": "Actualmente ofrecemos: Metrología Básica (5 horas, US $125.00), Interpretación de Certificados de Calibración (2,5 horas, US $62.50), Introducción a la Metrología de Viscosidad (6 horas, US $150.00), Introducción a la Metrología de Presión (5 horas, US $125.00) e Introducción a la Calibración de Multímetros (6 horas, US $150.00). Los precios son por participante. Para programar una capacitación escriba a info@cename.gt."
     },
     {
       "p": "¿Prestan todos los servicios del tarifario del Acuerdo Gubernativo 173-2021?",

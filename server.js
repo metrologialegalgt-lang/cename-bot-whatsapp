@@ -35,6 +35,17 @@ const BASE_URL = (process.env.BASE_URL || "").replace(/\/$/, "");
 const ENCUESTA_URL =
   process.env.ENCUESTA_URL ||
   (BASE_URL ? `${BASE_URL}/evaluacion.jpg` : "");
+// ------------------------------------------------------------
+// Registro de conversaciones (bitácora)
+// LOG_URL: URL del Web App de Google Apps Script que escribe en la hoja.
+// LOG_MODO: "anonimo" (por defecto) guarda un código irreversible en lugar
+//           del número y NO guarda el texto; "completo" guarda ambos.
+// Si LOG_URL está vacía, no se registra nada.
+// ------------------------------------------------------------
+const LOG_URL = process.env.LOG_URL || "";
+const LOG_MODO = (process.env.LOG_MODO || "anonimo").toLowerCase();
+const LOG_SAL = process.env.LOG_SAL || "cename";
+
 const ENCUESTA_TEXTO =
   process.env.ENCUESTA_TEXTO ||
   "Gracias por comunicarse con el CENAME 🙌 Su opinión nos ayuda a mejorar: escanee el código para responder nuestra breve evaluación del servicio.";
@@ -276,10 +287,12 @@ function construirSystemPrompt(n) {
       "NOTAS IMPORTANTES:\n" + n.notas.map((x) => `- ${x}`).join("\n")
     );
   }
+
   // --- Encuesta de satisfacción ---
   if (n.encuesta_satisfaccion) {
     secciones.push("ENCUESTA DE SATISFACCIÓN:\n" + n.encuesta_satisfaccion);
   }
+
   // --- FAQ ---
   if (Array.isArray(n.faq) && n.faq.length) {
     secciones.push(
@@ -328,6 +341,45 @@ setInterval(() => {
 // Deduplicación: Meta puede reenviar el mismo webhook varias veces
 const mensajesProcesados = new Set();
 setInterval(() => mensajesProcesados.clear(), 1000 * 60 * 60);
+
+// ------------------------------------------------------------
+// Bitácora: envía una fila a Google Sheets. Nunca bloquea ni rompe la
+// atención al ciudadano; si falla, solo queda anotado en los logs.
+// ------------------------------------------------------------
+const crypto = require("crypto");
+
+function seudonimo(telefono) {
+  return crypto
+    .createHash("sha256")
+    .update(telefono + LOG_SAL)
+    .digest("hex")
+    .slice(0, 10)
+    .toUpperCase();
+}
+
+function registrar(datos) {
+  if (!LOG_URL) return;
+  const completo = LOG_MODO === "completo";
+  const fila = {
+    fecha: new Date().toISOString(),
+    usuario: completo ? `+${datos.telefono}` : seudonimo(datos.telefono),
+    mensaje: completo ? datos.mensaje : "",
+    respuesta: completo ? datos.respuesta : "",
+    caracteres_mensaje: (datos.mensaje || "").length,
+    caracteres_respuesta: (datos.respuesta || "").length,
+    resultado: datos.resultado,
+    modelo: datos.modelo || MODEL,
+    duracion_ms: datos.ms ?? "",
+    encuesta_enviada: datos.encuesta ? "sí" : "no",
+    modo: LOG_MODO,
+  };
+  // Fire and forget: no se espera la respuesta
+  fetch(LOG_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(fila),
+  }).catch((e) => console.error("⚠️ Bitácora no registrada:", e.message));
+}
 
 // ------------------------------------------------------------
 // Control de envío de la encuesta: una sola vez por conversación
@@ -395,6 +447,7 @@ app.post("/webhook", async (req, res) => {
     }
 
     console.log(`📩 [${telefono}]: ${texto}`);
+    const t0 = Date.now();
 
     // Marcar como leído (los checks azules generan confianza)
     marcarLeido(mensaje.id).catch(() => {});
@@ -424,6 +477,7 @@ app.post("/webhook", async (req, res) => {
         "Disculpe, no pude generar la respuesta en este momento 🙏 ¿Podría repetir su consulta, de preferencia más específica? Si prefiere, puede escribirnos a info@cename.gt."
       );
       console.warn(`⚠️ [${telefono}] respuesta vacía del modelo; se envió aviso`);
+      registrar({ telefono, mensaje: texto, respuesta: "", resultado: "vacia", ms: Date.now() - t0 });
       return;
     }
 
@@ -431,21 +485,16 @@ app.post("/webhook", async (req, res) => {
     await enviarMensaje(telefono, textoRespuesta);
 
     // Encuesta de satisfacción — tres disparadores
-    // a) La persona la pide. Se usan raíces de palabra (calific*, evalú*,
-    //    opini*...) para cubrir todas las variantes: "calificar",
-    //    "calificación", "evaluación", "evalúo", "opinión", "sugerencias".
+    // a) La persona la pide (raíces de palabra: calific*, evalú*, opini*...).
     const pideEncuesta =
       /(\bqr\b|encuesta|eval[uú]|calific|puntu|opini|opinar|sugerenc|coment)/i.test(
         texto
       );
-
-    // b) El bot PROMETIÓ enviarla en su respuesta. Si lo dice, hay que
-    //    cumplirlo: nunca debe prometer el código y no mandarlo.
+    // b) El bot PROMETIÓ enviarla: si lo dice, hay que cumplirlo.
     const prometioEncuesta =
       /(c[oó]digo qr|\bqr\b|evaluaci[oó]n del servicio|breve evaluaci[oó]n|encuesta)/i.test(
         textoRespuesta
       );
-
     // c) Cierre de conversación: una sola vez por conversación.
     const despedida =
       /\b(gracias|muchas gracias|adi[oó]s|hasta luego|eso es todo|es todo|nada m[aá]s|listo)\b/i.test(
@@ -461,6 +510,14 @@ app.post("/webhook", async (req, res) => {
     }
 
     console.log(`📤 [${telefono}]: ${textoRespuesta.slice(0, 80)}...`);
+    registrar({
+      telefono,
+      mensaje: texto,
+      respuesta: textoRespuesta,
+      resultado: "ok",
+      ms: Date.now() - t0,
+      encuesta: pideEncuesta || prometioEncuesta || cierraConversacion || despedida,
+    });
   } catch (err) {
     console.error("❌ Error procesando mensaje:", err.message);
 
@@ -481,6 +538,12 @@ app.post("/webhook", async (req, res) => {
           "Disculpe, tuvimos un inconveniente técnico al procesar su consulta 🙏 Por favor intente de nuevo, o escríbanos a info@cename.gt."
         );
       }
+      registrar({
+        telefono: tel,
+        mensaje: "",
+        respuesta: "",
+        resultado: err.cuotaAgotada ? "cuota_agotada" : "error",
+      });
     } catch (e2) {
       console.error("❌ Tampoco se pudo enviar el aviso de error:", e2.message);
     }

@@ -371,6 +371,7 @@ function registrar(datos) {
     modelo: datos.modelo || MODEL,
     duracion_ms: datos.ms ?? "",
     encuesta_enviada: datos.encuesta ? "sí" : "no",
+    mensajes_salientes: datos.salientes ?? 1,
     modo: LOG_MODO,
   };
   // Fire and forget: no se espera la respuesta
@@ -384,18 +385,30 @@ function registrar(datos) {
 // ------------------------------------------------------------
 // Control de envío de la encuesta: una sola vez por conversación
 // ------------------------------------------------------------
-async function enviarEncuesta(telefono) {
+// Devuelve true si logró enviarla. Si se le pasa `textoPrevio`, lo incluye como
+// pie de la imagen para NO gastar dos mensajes facturables (desde el 1 de
+// octubre de 2026 Meta cobra cada mensaje de servicio saliente).
+const LIMITE_PIE = 1024; // límite de caracteres del caption de WhatsApp
+
+async function enviarEncuesta(telefono, textoPrevio) {
   if (!ENCUESTA_URL) {
     console.warn(
       "⚠️ Encuesta no enviada: falta configurar BASE_URL (o ENCUESTA_URL) en las variables de entorno"
     );
-    return;
+    return false;
   }
+  const pie = textoPrevio
+    ? `${textoPrevio}\n\n${ENCUESTA_TEXTO}`
+    : ENCUESTA_TEXTO;
+  if (pie.length > LIMITE_PIE) return false; // no cabe: el llamador decide
+
   try {
-    await enviarImagen(telefono, ENCUESTA_URL, ENCUESTA_TEXTO);
-    console.log(`📋 [${telefono}] encuesta de satisfacción enviada`);
+    await enviarImagen(telefono, ENCUESTA_URL, pie);
+    console.log(`📋 [${telefono}] encuesta enviada${textoPrevio ? " (fusionada con la respuesta)" : ""}`);
+    return true;
   } catch (err) {
     console.error("⚠️ No se pudo enviar la encuesta:", err.message);
+    return false;
   }
 }
 
@@ -482,7 +495,6 @@ app.post("/webhook", async (req, res) => {
     }
 
     historial.mensajes.push({ role: "assistant", content: textoRespuesta });
-    await enviarMensaje(telefono, textoRespuesta);
 
     // Encuesta de satisfacción — tres disparadores
     // a) La persona la pide (raíces de palabra: calific*, evalú*, opini*...).
@@ -501,22 +513,40 @@ app.post("/webhook", async (req, res) => {
         texto
       );
 
-    if (pideEncuesta || prometioEncuesta) {
+    const tocaEncuesta =
+      pideEncuesta ||
+      prometioEncuesta ||
+      ((cierraConversacion || despedida) && !historial.encuestaEnviada);
+
+    // Cada mensaje saliente se factura (Meta cobra los mensajes de servicio
+    // desde el 1 de octubre de 2026). Cuando toca enviar la encuesta se intenta
+    // FUSIONARLA con la respuesta: la imagen del QR lleva el texto como pie y
+    // sale un solo mensaje en lugar de dos.
+    let salientes = 0;
+
+    if (tocaEncuesta) {
       historial.encuestaEnviada = true;
-      await enviarEncuesta(telefono);
-    } else if ((cierraConversacion || despedida) && !historial.encuestaEnviada) {
-      historial.encuestaEnviada = true;
-      await enviarEncuesta(telefono);
+      if (await enviarEncuesta(telefono, textoRespuesta)) {
+        salientes = 1; // fusionado
+      } else {
+        await enviarMensaje(telefono, textoRespuesta);
+        salientes = 1;
+        if (await enviarEncuesta(telefono)) salientes = 2;
+      }
+    } else {
+      await enviarMensaje(telefono, textoRespuesta);
+      salientes = 1;
     }
 
-    console.log(`📤 [${telefono}]: ${textoRespuesta.slice(0, 80)}...`);
+    console.log(`📤 [${telefono}]: ${textoRespuesta.slice(0, 80)}... (${salientes} msj)`);
     registrar({
       telefono,
       mensaje: texto,
       respuesta: textoRespuesta,
       resultado: "ok",
       ms: Date.now() - t0,
-      encuesta: pideEncuesta || prometioEncuesta || cierraConversacion || despedida,
+      encuesta: tocaEncuesta,
+      salientes,
     });
   } catch (err) {
     console.error("❌ Error procesando mensaje:", err.message);

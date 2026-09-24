@@ -97,6 +97,24 @@
           "servicio": "M1, M1-2, M2, M2-3 y M3 mayores de 500 kg hasta 1 000 kg",
           "tarifa": "US $400.00"
         }
+      ],
+      "claves": [
+        "masa",
+        "masas",
+        "pesa",
+        "pesas",
+        "oiml",
+        "e2",
+        "f1",
+        "f2",
+        "m1",
+        "m2",
+        "m3",
+        "kilogramo",
+        "gramo",
+        "kg",
+        "kilos",
+        "kilogramos"
       ]
     },
     {
@@ -132,7 +150,17 @@
           "tarifa": "US $500.00"
         }
       ],
-      "nota": "En estos casos se emite informe, no certificado"
+      "nota": "En estos casos se emite informe, no certificado",
+      "claves": [
+        "astm",
+        "nist",
+        "libra",
+        "libras",
+        "lb",
+        "lbs",
+        "masa",
+        "pesa"
+      ]
     },
     {
       "area": "Masa — calibración de balanzas",
@@ -150,6 +178,14 @@
           "servicio": "Balanzas hasta 400 kg",
           "tarifa": "US $200.00"
         }
+      ],
+      "claves": [
+        "balanza",
+        "balanzas",
+        "báscula",
+        "basculas",
+        "pesaje",
+        "pesar"
       ]
     },
     {
@@ -169,7 +205,19 @@
           "tarifa": "US $100.00"
         }
       ],
-      "nota": "El alcance disponible llega hasta 20 L por método gravimétrico. Capacidades mayores y camiones cisterna no se prestan actualmente."
+      "nota": "El alcance disponible llega hasta 20 L por método gravimétrico. Capacidades mayores y camiones cisterna no se prestan actualmente.",
+      "claves": [
+        "contenedor",
+        "recipiente",
+        "litro",
+        "litros",
+        "cisterna",
+        "garrafón",
+        "galón",
+        "tanque",
+        "volumen",
+        "volumétric"
+      ]
     },
     {
       "area": "Volumen — material volumétrico menor a 2000 mL (método gravimétrico)",
@@ -202,6 +250,21 @@
           "servicio": "Picnómetro Gay-Lussac (5 mL a 100 mL)",
           "tarifa": "US $40.00"
         }
+      ],
+      "claves": [
+        "pipeta",
+        "matraz",
+        "matraces",
+        "bureta",
+        "probeta",
+        "picnómetro",
+        "micropipeta",
+        "volumétric",
+        "mililitro",
+        "ml",
+        "volumen",
+        "material de vidrio",
+        "cristalería"
       ]
     },
     {
@@ -212,6 +275,9 @@
           "servicio": "Viscosímetros capilares (por pieza calibrada)",
           "tarifa": "US $50.00"
         }
+      ],
+      "claves": [
+        "viscos"
       ]
     },
     {
@@ -234,7 +300,21 @@
           "nota": "punto adicional US $10.00"
         }
       ],
-      "nota": "El alcance disponible cubre termómetros de líquido en vidrio, digitales y bimetálicos de -20 °C a 300 °C. Además se ofrece calibración de humedad relativa únicamente en termómetros digitales que la incorporen, de 10 °C a 40 °C y de 20 %HR a 80 %HR."
+      "nota": "El alcance disponible cubre termómetros de líquido en vidrio, digitales y bimetálicos de -20 °C a 300 °C. Además se ofrece calibración de humedad relativa únicamente en termómetros digitales que la incorporen, de 10 °C a 40 °C y de 20 %HR a 80 %HR.",
+      "claves": [
+        "termómetr",
+        "temperatura",
+        "grados",
+        "°c",
+        "termohigrómetr",
+        "higrómetr",
+        "humedad",
+        "bimetálic",
+        "termopar",
+        "termocupla",
+        "pt100",
+        "prt"
+      ]
     },
     {
       "area": "Tiempo y frecuencia",
@@ -248,6 +328,16 @@
           "servicio": "NTP dedicado",
           "tarifa": "US $100.00 inicial más US $500.00 por año"
         }
+      ],
+      "claves": [
+        "cronómetr",
+        "tiempo y frecuencia",
+        "frecuencia",
+        "ntp",
+        "reloj",
+        "hora oficial",
+        "servidor de hora",
+        "sincroniz"
       ]
     },
     {
@@ -258,6 +348,15 @@
           "servicio": "pH — sensor",
           "tarifa": "US $110.00"
         }
+      ],
+      "claves": [
+        "ph",
+        "potenciómetr",
+        "conductividad",
+        "fisicoquímic",
+        "espectrofotómetr",
+        "refractómetr",
+        "polarímetr"
       ]
     },
     {
@@ -285,7 +384,23 @@
           "tarifa": "US $50.00 el primer punto"
         }
       ],
-      "nota": "Punto adicional hasta 5 puntos: US $10.00 cada uno. Punto adicional a partir del sexto: US $5.00 cada uno. Solo se atiende instrumentación de baja exactitud (3 dígitos de resolución)."
+      "nota": "Punto adicional hasta 5 puntos: US $10.00 cada uno. Punto adicional a partir del sexto: US $5.00 cada uno. Solo se atiende instrumentación de baja exactitud (3 dígitos de resolución).",
+      "claves": [
+        "multímetr",
+        "voltímetr",
+        "amperímetr",
+        "ohmímetr",
+        "pinza amperimétrica",
+        "eléctric",
+        "tensión eléctrica",
+        "voltaje",
+        "corriente",
+        "resistencia",
+        "voltio",
+        "amperio",
+        "ohm",
+        "calibrador de procesos"
+      ]
     },
     {
       "area": "Presión (tarifa por dos puntos de calibración)",
@@ -322,7 +437,24 @@
           "nota": "punto adicional US $15.00"
         }
       ],
-      "nota": "No se prestan actualmente servicios de fuerza (máquinas de tensión o compresión) ni de presión absoluta."
+      "nota": "No se prestan actualmente servicios de fuerza (máquinas de tensión o compresión) ni de presión absoluta.",
+      "claves": [
+        "presión",
+        "manómetr",
+        "barómetr",
+        "vacuómetr",
+        "vacío",
+        "transductor",
+        "psi",
+        "bar",
+        "kpa",
+        "mpa",
+        "hpa",
+        "fuerza",
+        "compresión",
+        "celda de carga",
+        "dinamómetr"
+      ]
     },
     {
       "area": "Dimensional — micrómetros de exterior con topes fijos",
@@ -336,6 +468,12 @@
           "servicio": "Analógicos/digitales mayores de 50 mm y hasta 150 mm",
           "tarifa": "US $30.00"
         }
+      ],
+      "claves": [
+        "micrómetr",
+        "dimensional",
+        "longitud",
+        "espesor"
       ]
     },
     {
@@ -367,7 +505,20 @@
           "tarifa": "US $260.00"
         }
       ],
-      "nota": "En dimensional solo se atienden micrómetros de exterior con topes fijos y pie de rey, en los intervalos indicados."
+      "nota": "En dimensional solo se atienden micrómetros de exterior con topes fijos y pie de rey, en los intervalos indicados.",
+      "claves": [
+        "pie de rey",
+        "vernier",
+        "calibrador",
+        "calibre",
+        "dimensional",
+        "longitud",
+        "cinta",
+        "reglas",
+        "regla de",
+        "regla metálica",
+        "nonio"
+      ]
     },
     {
       "area": "Metrología legal — servicios de inspección y verificación (UIVML)",
@@ -389,6 +540,29 @@
           "servicio": "Contenido neto en productos preempacados — verificación periódica",
           "tarifa": "US $15.00 por hora"
         }
+      ],
+      "claves": [
+        "dispensador",
+        "gasolin",
+        "combustible",
+        "surtidor",
+        "diésel",
+        "bomba de",
+        "medidor",
+        "contador",
+        "agua",
+        "energía",
+        "electricidad",
+        "preempac",
+        "contenido neto",
+        "peso justo",
+        "verificación",
+        "verificar",
+        "uivml",
+        "marchamo",
+        "centinela",
+        "metrología legal",
+        "inspección"
       ]
     },
     {
@@ -421,7 +595,18 @@
           "nota": "tarifa base del Artículo 20; el costo depende de la duración del curso"
         }
       ],
-      "nota": "Todos los cursos se cotizan sobre la tarifa de US $25.00 hora/hombre por participante. Para programar una capacitación o consultar fechas disponibles, escriba a info@cename.gt."
+      "nota": "Todos los cursos se cotizan sobre la tarifa de US $25.00 hora/hombre por participante. Para programar una capacitación o consultar fechas disponibles, escriba a info@cename.gt.",
+      "claves": [
+        "curso",
+        "capacit",
+        "taller",
+        "formación",
+        "entrenamiento",
+        "diplomado",
+        "seminario",
+        "clase de",
+        "clases"
+      ]
     }
   ],
   "derivaciones": [
@@ -503,47 +688,153 @@
   "faq": [
     {
       "p": "¿Cuál es la diferencia entre calibración y verificación?",
-      "r": "La calibración es un servicio del Laboratorio Nacional de Metrología que establece la relación entre los valores de un patrón y las indicaciones del instrumento, con su incertidumbre asociada, y concluye con un certificado. La verificación es la aportación de evidencia objetiva de que un instrumento cumple requisitos especificados; en metrología legal la realiza la UIVML sobre instrumentos sujetos a control, como dispensadores de combustible, medidores de agua, medidores de energía eléctrica y contenido neto de preempacados."
+      "r": "La calibración es un servicio del Laboratorio Nacional de Metrología que establece la relación entre los valores de un patrón y las indicaciones del instrumento, con su incertidumbre asociada, y concluye con un certificado. La verificación es la aportación de evidencia objetiva de que un instrumento cumple requisitos especificados; en metrología legal la realiza la UIVML sobre instrumentos sujetos a control, como dispensadores de combustible, medidores de agua, medidores de energía eléctrica y contenido neto de preempacados.",
+      "claves": [
+        "diferencia",
+        "qué es calibr",
+        "qué es verific",
+        "qué significa",
+        "calibración y verificación",
+        "verificación y calibración"
+      ]
     },
     {
       "p": "¿Cómo solicito un servicio de calibración?",
-      "r": "Debe escribir al correo del laboratorio que corresponde a su instrumento, copiando siempre a info@cename.gt, indicando el instrumento (marca, modelo, intervalo o capacidad), la cantidad de piezas y los puntos de calibración que necesita. El laboratorio le confirmará la cotización, los requisitos y la programación."
+      "r": "Debe escribir al correo del laboratorio que corresponde a su instrumento, copiando siempre a info@cename.gt, indicando el instrumento (marca, modelo, intervalo o capacidad), la cantidad de piezas y los puntos de calibración que necesita. El laboratorio le confirmará la cotización, los requisitos y la programación.",
+      "claves": [
+        "solicit",
+        "cotiz",
+        "cómo pido",
+        "trámite",
+        "requisit",
+        "agend",
+        "cita",
+        "enviar mi",
+        "llevar mi",
+        "proceso para"
+      ]
     },
     {
       "p": "¿En qué moneda se pagan las tarifas?",
-      "r": "Las tarifas están expresadas en dólares estadounidenses, pero el pago se hace efectivo en quetzales según el tipo de cambio para la venta vigente el día del pago, tomando como referencia la tasa del Banco de Guatemala."
+      "r": "Las tarifas están expresadas en dólares estadounidenses, pero el pago se hace efectivo en quetzales según el tipo de cambio para la venta vigente el día del pago, tomando como referencia la tasa del Banco de Guatemala.",
+      "claves": [
+        "moneda",
+        "quetzal",
+        "dólar",
+        "pago",
+        "pagar",
+        "tipo de cambio",
+        "factur",
+        "depósito",
+        "transferencia",
+        "efectivo",
+        "tarjeta"
+      ]
     },
     {
       "p": "¿El CENAME atiende fuera de la ciudad de Guatemala?",
-      "r": "Sí. Cuando el servicio se realiza fuera de los límites del Municipio de Guatemala se agrega US $0.50 por kilómetro recorrido desde la sede del CENAME, además de la tarifa del servicio."
+      "r": "Sí. Cuando el servicio se realiza fuera de los límites del Municipio de Guatemala se agrega US $0.50 por kilómetro recorrido desde la sede del CENAME, además de la tarifa del servicio.",
+      "claves": [
+        "fuera",
+        "departamento",
+        "kilómetr",
+        "viaje",
+        "traslado",
+        "domicilio",
+        "in situ",
+        "en sitio",
+        "planta",
+        "vienen",
+        "visita",
+        "interior del país"
+      ]
     },
     {
       "p": "¿La tarifa incluye el certificado?",
-      "r": "Sí, las tarifas de calibración incluyen la emisión del certificado correspondiente. En el caso de masas ASTM, NIST y masas en libras que no cumplen con el Sistema Internacional de Unidades, se emite un informe."
+      "r": "Sí, las tarifas de calibración incluyen la emisión del certificado correspondiente. En el caso de masas ASTM, NIST y masas en libras que no cumplen con el Sistema Internacional de Unidades, se emite un informe.",
+      "claves": [
+        "certificado",
+        "informe",
+        "constancia"
+      ]
     },
     {
       "p": "¿Cuánto tiempo tarda un servicio?",
-      "r": "Los plazos dependen de la carga de trabajo y del tipo de instrumento, por lo que los confirma directamente el laboratorio responsable al momento de la cotización."
+      "r": "Los plazos dependen de la carga de trabajo y del tipo de instrumento, por lo que los confirma directamente el laboratorio responsable al momento de la cotización.",
+      "claves": [
+        "cuánto tarda",
+        "tarda",
+        "plazo",
+        "demora",
+        "para cuándo",
+        "cuándo estaría",
+        "cuándo me",
+        "cuántos días",
+        "días hábiles",
+        "entrega",
+        "rápido",
+        "urgente"
+      ]
     },
     {
       "p": "¿Quiero denunciar una gasolinera que no despacha la cantidad correcta, qué hago?",
-      "r": "Puede reportarlo a la Unidad de Verificación de Dispensadores de Combustible, indicando el nombre y la ubicación exacta del establecimiento, la fecha y la descripción de lo ocurrido, escribiendo al Ing. Dimas Lisandro González Rosales (dlgonzalezr@mineco.gob.gt) con copia a info@cename.gt."
+      "r": "Puede reportarlo a la Unidad de Verificación de Dispensadores de Combustible, indicando el nombre y la ubicación exacta del establecimiento, la fecha y la descripción de lo ocurrido, escribiendo al Ing. Dimas Lisandro González Rosales (dlgonzalezr@mineco.gob.gt) con copia a info@cename.gt.",
+      "claves": [
+        "denunci",
+        "reportar",
+        "estafa",
+        "robando",
+        "no despacha",
+        "litros completos"
+      ]
     },
     {
       "p": "¿Ofrecen capacitaciones en metrología?",
-      "r": "Sí, el CENAME brinda servicios de capacitación de recurso humano en materia de metrología, con una tarifa de US $25.00 hora/hombre por persona participante. Para programar una capacitación puede escribir a info@cename.gt."
+      "r": "Sí, el CENAME brinda servicios de capacitación de recurso humano en materia de metrología, con una tarifa de US $25.00 hora/hombre por persona participante. Para programar una capacitación puede escribir a info@cename.gt.",
+      "claves": [
+        "curso",
+        "capacit",
+        "taller",
+        "formación",
+        "entrenamiento"
+      ]
     },
     {
       "p": "¿Qué cursos de capacitación tienen disponibles?",
-      "r": "Actualmente ofrecemos: Metrología Básica (5 horas, US $125.00), Interpretación de Certificados de Calibración (2,5 horas, US $62.50), Introducción a la Metrología de Viscosidad (6 horas, US $150.00), Introducción a la Metrología de Presión (5 horas, US $125.00) e Introducción a la Calibración de Multímetros (6 horas, US $150.00). Los precios son por participante. Para programar una capacitación escriba a info@cename.gt."
+      "r": "Actualmente ofrecemos: Metrología Básica (5 horas, US $125.00), Interpretación de Certificados de Calibración (2,5 horas, US $62.50), Introducción a la Metrología de Viscosidad (6 horas, US $150.00), Introducción a la Metrología de Presión (5 horas, US $125.00) e Introducción a la Calibración de Multímetros (6 horas, US $150.00). Los precios son por participante. Para programar una capacitación escriba a info@cename.gt.",
+      "claves": [
+        "curso",
+        "capacit",
+        "taller"
+      ]
     },
     {
       "p": "¿Prestan todos los servicios del tarifario del Acuerdo Gubernativo 173-2021?",
-      "r": "Por el momento no. El CENAME presta los servicios para los que cuenta con capacidad instalada vigente, que son los que aparecen en este listado con sus intervalos de medición. Si el servicio que necesita no aparece, escriba a info@cename.gt para orientarle sobre alternativas."
+      "r": "Por el momento no. El CENAME presta los servicios para los que cuenta con capacidad instalada vigente, que son los que aparecen en este listado con sus intervalos de medición. Si el servicio que necesita no aparece, escriba a info@cename.gt para orientarle sobre alternativas.",
+      "claves": [
+        "qué servicios",
+        "servicios ofrecen",
+        "todos los servicios",
+        "qué hacen",
+        "qué calibran",
+        "qué ofrecen",
+        "disponible",
+        "tienen servicio"
+      ]
     },
     {
       "p": "¿Cómo puedo presentar una queja o sugerencia?",
-      "r": "Puede escribir a info@cename.gt detallando lo ocurrido, con fecha y datos de contacto, para que su caso se canalice a la instancia correspondiente."
+      "r": "Puede escribir a info@cename.gt detallando lo ocurrido, con fecha y datos de contacto, para que su caso se canalice a la instancia correspondiente.",
+      "claves": [
+        "queja",
+        "reclamo",
+        "sugerencia",
+        "inconform",
+        "mal servicio",
+        "molest",
+        "felicit",
+        "denunci"
+      ]
     }
   ],
   "servicios_no_disponibles": [

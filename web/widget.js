@@ -416,7 +416,7 @@
   // navegador reintenta una sola vez y nunca por "tiempo": sería mandar una
   // consulta nueva mientras la anterior aún se está respondiendo.
   var REINTENTABLES = { servicio_saturado: true, red: true };
-  var ESPERAS_AUTO = [5000];
+  var ESPERAS_AUTO = []; // sin reintentos automáticos: la persona decide con el botón "Reintentar"
   // Debe ser MAYOR que el presupuesto de tiempo del servidor (unos 65 s en el
   // peor caso). Así el navegador nunca reintenta mientras el servidor sigue
   // trabajando en la misma pregunta, lo que gastaría el doble de cuota.

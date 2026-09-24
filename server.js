@@ -985,6 +985,9 @@ app.get("/widget.js", (req, res) => {
     avatar: fs.existsSync(path.join(__dirname, "public", "balamper-avatar.png"))
       ? `${base}/balamper-avatar.png`
       : "",
+    figura: fs.existsSync(path.join(__dirname, "public", "balamper-flotante.webp"))
+      ? `${base}/balamper-flotante.webp`
+      : "",
     // El navegador espera más que el servidor, para no abandonar una
     // respuesta que todavía se está generando.
     espera: presupuesto + 25000,

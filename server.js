@@ -109,21 +109,26 @@ async function consultarLLM(mensajes) {
     // Los modelos Flash-Lite tienen un defecto conocido: a veces devuelven
     // respuesta vacía (finishReason MALFORMED_RESPONSE o STOP sin texto).
     // Por eso el reintento puede hacerse contra un modelo alterno.
+    // Tres intentos, cubriendo las dos fallas conocidas de Gemini:
+    //  - respuesta VACÍA (el razonamiento consumió los tokens, o el defecto
+    //    MALFORMED_RESPONSE de los Flash-Lite)
+    //  - modelo SATURADO (503 "high demand") o fallas transitorias del
+    //    servidor (500, 502, 504). Cada modelo tiene su propia capacidad, así
+    //    que el último intento va contra el modelo alterno.
+    // El 429 (cuota agotada) NO se reintenta: reintentar solo la gastaría más.
+    const alterno = process.env.LLM_MODEL_FALLBACK || MODEL;
     const intentos = [
-      {
-        modelo: MODEL,
-        nivel: process.env.GEMINI_THINKING || "low",
-        tokens: Number(process.env.GEMINI_MAX_TOKENS) || 2000,
-      },
-      {
-        modelo: process.env.LLM_MODEL_FALLBACK || MODEL,
-        nivel: "minimal",
-        tokens: 3000,
-      },
+      { modelo: MODEL, nivel: process.env.GEMINI_THINKING || "low", tokens: Number(process.env.GEMINI_MAX_TOKENS) || 2000, espera: 0 },
+      { modelo: MODEL, nivel: "minimal", tokens: 3000, espera: 1500 },
+      { modelo: alterno, nivel: "minimal", tokens: 3000, espera: 2500 },
     ];
+    const TRANSITORIOS = [500, 502, 503, 504];
+    let ultimoError = null;
 
     for (let i = 0; i < intentos.length; i++) {
-      const { modelo, nivel, tokens } = intentos[i];
+      const { modelo, nivel, tokens, espera } = intentos[i];
+      if (espera) await new Promise((r) => setTimeout(r, espera));
+
       const resp = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`,
         {
@@ -148,10 +153,18 @@ async function consultarLLM(mensajes) {
 
       if (!resp.ok) {
         const detalle = await resp.text();
-        // 429 = cuota agotada o demasiadas solicitudes por minuto.
         const err = new Error(`Gemini API ${resp.status}: ${detalle}`);
-        if (resp.status === 429) err.cuotaAgotada = true;
-        throw err;
+        if (resp.status === 429) {
+          err.cuotaAgotada = true;
+          throw err; // no se reintenta
+        }
+        if (TRANSITORIOS.includes(resp.status)) {
+          err.saturado = true;
+          ultimoError = err;
+          console.warn(`⚠️ Gemini ${resp.status} (intento ${i + 1}/${intentos.length}, modelo=${modelo}); reintentando`);
+          continue;
+        }
+        throw err; // otros errores (400, 403, 404): reintentar no sirve
       }
 
       const data = await resp.json();
@@ -159,7 +172,10 @@ async function consultarLLM(mensajes) {
       const partes = cand?.content?.parts || [];
       const texto = partes.map((p) => p.text || "").join("").trim();
 
-      if (texto) return texto;
+      if (texto) {
+        if (i > 0) console.log(`✅ Gemini respondió en el intento ${i + 1} (modelo=${modelo})`);
+        return texto;
+      }
 
       const u = data.usageMetadata || {};
       console.warn(
@@ -167,6 +183,8 @@ async function consultarLLM(mensajes) {
           `modelo=${modelo} nivel=${nivel} tokens=${tokens} | razonamiento=${u.thoughtsTokenCount ?? "?"} salida=${u.candidatesTokenCount ?? "?"}`
       );
     }
+    // Si todos los intentos fueron por saturación, se informa como tal
+    if (ultimoError) throw ultimoError;
     return "";
   }
 
@@ -580,6 +598,11 @@ app.post("/webhook", async (req, res) => {
           "En este momento estamos atendiendo muchas consultas y no puedo responderle de inmediato 🙏 Por favor intente de nuevo en unos minutos, o escríbanos a info@cename.gt y le atenderemos con gusto."
         );
         console.error("🚨 CUOTA DEL SERVICIO DE IA AGOTADA — revise el plan del proveedor");
+      } else if (err.saturado) {
+        await enviarMensaje(
+          tel,
+          "El asistente está recibiendo muchas consultas en este momento 🙏 Por favor intente de nuevo en unos minutos, o escríbanos a info@cename.gt."
+        );
       } else {
         await enviarMensaje(
           tel,
@@ -590,7 +613,7 @@ app.post("/webhook", async (req, res) => {
         telefono: tel,
         mensaje: "",
         respuesta: "",
-        resultado: err.cuotaAgotada ? "cuota_agotada" : "error",
+        resultado: err.cuotaAgotada ? "cuota_agotada" : err.saturado ? "saturado" : "error",
       });
     } catch (e2) {
       console.error("❌ Tampoco se pudo enviar el aviso de error:", e2.message);
@@ -770,8 +793,9 @@ app.post("/chat", async (req, res) => {
     res.json({ respuesta, encuesta: debeEncuesta ? ENCUESTA_LINK : null });
   } catch (err) {
     console.error("❌ Web: error procesando mensaje:", err.message);
-    registrar({ telefono: clave, usuario, mensaje: texto, respuesta: "", resultado: err.cuotaAgotada ? "cuota_agotada" : "error", salientes: 0 });
-    res.status(err.cuotaAgotada ? 503 : 500).json({ error: err.cuotaAgotada ? "cuota_agotada" : "error_interno" });
+    registrar({ telefono: clave, usuario, mensaje: texto, respuesta: "", resultado: err.cuotaAgotada ? "cuota_agotada" : err.saturado ? "saturado" : "error", salientes: 0 });
+    const codigo = err.cuotaAgotada ? "cuota_agotada" : err.saturado ? "servicio_saturado" : "error_interno";
+    res.status(err.cuotaAgotada || err.saturado ? 503 : 500).json({ error: codigo });
   }
 });
 

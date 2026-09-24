@@ -306,6 +306,7 @@
     limite_visitante: "Ha enviado varios mensajes seguidos. Espere unos minutos para continuar, o escriba a info@cename.gt.",
     limite_diario: "El asistente alcanzó su límite de consultas de hoy. Puede escribir a info@cename.gt y le atenderemos.",
     cuota_agotada: "El asistente no está disponible en este momento. Intente más tarde, o escriba a info@cename.gt.",
+    servicio_saturado: "El asistente está recibiendo muchas consultas en este momento. Intente de nuevo en unos minutos, o escriba a info@cename.gt.",
     mensaje_largo: "Su mensaje supera los " + MAX_CARACTERES + " caracteres. Resúmalo e intente de nuevo.",
     red: "No se pudo enviar el mensaje. Revise su conexión e intente de nuevo.",
     tiempo: "El asistente tardó demasiado en responder. Intente de nuevo en un momento.",
@@ -381,4 +382,3 @@
     else document.addEventListener("DOMContentLoaded", abrir);
   }
 })();
-

@@ -117,46 +117,79 @@ async function consultarLLM(mensajes) {
     //    que el último intento va contra el modelo alterno.
     // El 429 (cuota agotada) NO se reintenta: reintentar solo la gastaría más.
     const alterno = process.env.LLM_MODEL_FALLBACK || MODEL;
+    // Hasta 5 intentos alternando modelos, con esperas crecientes, pero con
+    // un PRESUPUESTO DE TIEMPO total: pasado ese tiempo se deja de reintentar
+    // y se responde con un aviso. Así nunca queda una petición colgada, y la
+    // respuesta llega antes de que el navegador se canse de esperar.
     const intentos = [
-      { modelo: MODEL, nivel: process.env.GEMINI_THINKING || "low", tokens: Number(process.env.GEMINI_MAX_TOKENS) || 2000, espera: 0 },
-      { modelo: MODEL, nivel: "minimal", tokens: 3000, espera: 1500 },
+      { modelo: MODEL,   nivel: process.env.GEMINI_THINKING || "low", tokens: Number(process.env.GEMINI_MAX_TOKENS) || 2000, espera: 0 },
+      { modelo: MODEL,   nivel: "minimal", tokens: 3000, espera: 1500 },
       { modelo: alterno, nivel: "minimal", tokens: 3000, espera: 2500 },
+      { modelo: MODEL,   nivel: "minimal", tokens: 3000, espera: 5000 },
+      { modelo: alterno, nivel: "minimal", tokens: 3000, espera: 8000 },
     ];
+    const PRESUPUESTO_MS = Number(process.env.GEMINI_PRESUPUESTO_MS) || 45000;
+    const LIMITE_LLAMADA_MS = 20000; // una sola llamada a Gemini no puede tardar más
     const TRANSITORIOS = [500, 502, 503, 504];
+    const inicio = Date.now();
     let ultimoError = null;
+
+    // Gemini exige que los turnos alternen usuario/asistente. Si por un fallo
+    // previo quedaron dos turnos seguidos del mismo rol, se unen en uno.
+    const contenidos = [];
+    for (const m of mensajes) {
+      const rol = m.role === "assistant" ? "model" : "user";
+      const previo = contenidos[contenidos.length - 1];
+      if (previo && previo.role === rol) previo.parts[0].text += "\n\n" + m.content;
+      else contenidos.push({ role: rol, parts: [{ text: m.content }] });
+    }
 
     for (let i = 0; i < intentos.length; i++) {
       const { modelo, nivel, tokens, espera } = intentos[i];
+      if (i > 0 && Date.now() - inicio + espera > PRESUPUESTO_MS) {
+        console.warn(`⏱️ Gemini: presupuesto de tiempo agotado tras ${i} intentos`);
+        break;
+      }
       if (espera) await new Promise((r) => setTimeout(r, espera));
 
-      const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`,
-        {
-          method: "POST",
-          headers: {
-            "x-goog-api-key": process.env.GEMINI_API_KEY,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-            contents: mensajes.map((m) => ({
-              role: m.role === "assistant" ? "model" : "user",
-              parts: [{ text: m.content }],
-            })),
-            generationConfig: {
-              maxOutputTokens: tokens,
-              thinkingConfig: { thinkingLevel: nivel },
+      let resp;
+      const ctrl = new AbortController();
+      const corte = setTimeout(() => ctrl.abort(), LIMITE_LLAMADA_MS);
+      try {
+        resp = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`,
+          {
+            method: "POST",
+            signal: ctrl.signal,
+            headers: {
+              "x-goog-api-key": process.env.GEMINI_API_KEY,
+              "Content-Type": "application/json",
             },
-          }),
-        }
-      );
+            body: JSON.stringify({
+              system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+              contents: contenidos,
+              generationConfig: {
+                maxOutputTokens: tokens,
+                thinkingConfig: { thinkingLevel: nivel },
+              },
+            }),
+          }
+        );
+      } catch (e) {
+        // La llamada no respondió a tiempo, o falló la red: se trata como transitorio
+        clearTimeout(corte);
+        ultimoError = Object.assign(new Error(`Gemini sin respuesta (${e.name})`), { saturado: true });
+        console.warn(`⚠️ Gemini sin respuesta (intento ${i + 1}/${intentos.length}, modelo=${modelo}); reintentando`);
+        continue;
+      }
+      clearTimeout(corte);
 
       if (!resp.ok) {
         const detalle = await resp.text();
         const err = new Error(`Gemini API ${resp.status}: ${detalle}`);
         if (resp.status === 429) {
           err.cuotaAgotada = true;
-          throw err; // no se reintenta
+          throw err; // no se reintenta: solo gastaría más cuota
         }
         if (TRANSITORIOS.includes(resp.status)) {
           err.saturado = true;
@@ -164,7 +197,7 @@ async function consultarLLM(mensajes) {
           console.warn(`⚠️ Gemini ${resp.status} (intento ${i + 1}/${intentos.length}, modelo=${modelo}); reintentando`);
           continue;
         }
-        throw err; // otros errores (400, 403, 404): reintentar no sirve
+        throw err; // 400, 403, 404: reintentar no sirve
       }
 
       const data = await resp.json();
@@ -173,7 +206,7 @@ async function consultarLLM(mensajes) {
       const texto = partes.map((p) => p.text || "").join("").trim();
 
       if (texto) {
-        if (i > 0) console.log(`✅ Gemini respondió en el intento ${i + 1} (modelo=${modelo})`);
+        if (i > 0) console.log(`✅ Gemini respondió en el intento ${i + 1} (modelo=${modelo}, ${Date.now() - inicio} ms)`);
         return texto;
       }
 
@@ -183,7 +216,6 @@ async function consultarLLM(mensajes) {
           `modelo=${modelo} nivel=${nivel} tokens=${tokens} | razonamiento=${u.thoughtsTokenCount ?? "?"} salida=${u.candidatesTokenCount ?? "?"}`
       );
     }
-    // Si todos los intentos fueron por saturación, se informa como tal
     if (ultimoError) throw ultimoError;
     return "";
   }
@@ -338,9 +370,10 @@ function construirSystemPrompt(n) {
   }
 
   secciones.push(`MARCADOR ESPECIAL (invisible para la persona, úsalo con disciplina):
-Cuando la conversación haya concluido —porque la persona se despide, agradece, dice que ya no necesita nada, o porque ya le entregaste la información y la derivación que pedía— agrega al FINAL de tu mensaje, en una línea aparte:
+Agrega al FINAL de tu mensaje, en una línea aparte, la marca:
 [ENCUESTA]
-Úsalo UNA sola vez por conversación y solo al cerrar. No lo uses si la persona todavía tiene dudas pendientes.
+ÚNICAMENTE cuando la PERSONA indique expresamente que terminó: se despide, agradece dando por concluida la consulta, o dice que ya no necesita nada más.
+NO la uses por el solo hecho de haber respondido una pregunta o haber dado una derivación: responder no es cerrar. Si tienes duda, no la uses.
 Nunca menciones este marcador ni expliques que existe.`);
 
   return secciones.join("\n\n");
@@ -373,6 +406,16 @@ setInterval(() => {
     if (ahora - h.ultimaActividad > TTL_MS) historiales.delete(tel);
   }
 }, 1000 * 60 * 30);
+
+// Si una consulta falla, su pregunta quedaría en el historial sin respuesta.
+// Hay que quitarla: si no, al reintentar quedan dos preguntas seguidas y
+// Gemini rechaza la conversación porque los turnos no alternan.
+function descartarTurnoHuerfano(clave) {
+  const h = historiales.get(clave);
+  if (h && h.mensajes.length && h.mensajes[h.mensajes.length - 1].role === "user") {
+    h.mensajes.pop();
+  }
+}
 
 // Deduplicación: Meta puede reenviar el mismo webhook varias veces
 const mensajesProcesados = new Set();
@@ -435,7 +478,11 @@ function tocaEncuesta(textoUsuario, textoRespuesta, cierraConversacion, historia
     /\b(gracias|muchas gracias|adi[oó]s|hasta luego|eso es todo|es todo|nada m[aá]s|listo)\b/i.test(
       textoUsuario
     );
-  return pide || prometio || ((cierraConversacion || despedida) && !historial.encuestaEnviada);
+  // Salvaguarda: si la persona está preguntando algo, la conversación no está
+  // cerrando, aunque el modelo haya puesto la marca [ENCUESTA] por error.
+  const esPregunta = /[¿?]/.test(textoUsuario);
+  const cierreValido = cierraConversacion && !esPregunta;
+  return pide || prometio || ((cierreValido || despedida) && !historial.encuestaEnviada);
 }
 
 // ------------------------------------------------------------
@@ -591,6 +638,7 @@ app.post("/webhook", async (req, res) => {
     // cuota agotada, se alerta al responsable operativo.
     const tel = req.body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from;
     if (!tel) return;
+    descartarTurnoHuerfano(tel);
     try {
       if (err.cuotaAgotada) {
         await enviarMensaje(
@@ -793,6 +841,7 @@ app.post("/chat", async (req, res) => {
     res.json({ respuesta, encuesta: debeEncuesta ? ENCUESTA_LINK : null });
   } catch (err) {
     console.error("❌ Web: error procesando mensaje:", err.message);
+    descartarTurnoHuerfano(clave);
     registrar({ telefono: clave, usuario, mensaje: texto, respuesta: "", resultado: err.cuotaAgotada ? "cuota_agotada" : err.saturado ? "saturado" : "error", salientes: 0 });
     const codigo = err.cuotaAgotada ? "cuota_agotada" : err.saturado ? "servicio_saturado" : "error_interno";
     res.status(err.cuotaAgotada || err.saturado ? 503 : 500).json({ error: codigo });

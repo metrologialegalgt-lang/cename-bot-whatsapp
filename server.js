@@ -15,7 +15,8 @@ const path = require("path");
 const Anthropic = require("@anthropic-ai/sdk");
 
 const app = express();
-app.use(express.json());
+app.set("trust proxy", 1); // Render está detrás de un proxy: así req.ip es la IP real
+app.use(express.json({ limit: "20kb" }));
 // Archivos públicos (imagen de la encuesta de satisfacción)
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -49,6 +50,23 @@ const LOG_SAL = process.env.LOG_SAL || "cename";
 const ENCUESTA_TEXTO =
   process.env.ENCUESTA_TEXTO ||
   "Gracias por comunicarse con el CENAME 🙌 Su opinión nos ayuda a mejorar: escanee el código para responder nuestra breve evaluación del servicio.";
+
+// ------------------------------------------------------------
+// Canal web (chat en el sitio del CENAME)
+// ------------------------------------------------------------
+// Dominios autorizados a usar el chat (separados por comas)
+const WEB_ORIGENES = (process.env.WEB_ORIGENES || "https://cename.gt,https://www.cename.gt")
+  .split(",").map((s) => s.trim()).filter(Boolean);
+// Enlace a la encuesta (en la web se muestra como botón, no como QR)
+const ENCUESTA_LINK =
+  process.env.ENCUESTA_LINK ||
+  "https://forms.office.com/Pages/ResponsePage.aspx?id=Oed5uvsY-UyJycdfOw5B7t6w0sfGQy9Duccm2EsLmL5UOE5ZMllJUEJBSjlNWkw1T1BDUVgzQ1dYNi4u";
+const AVISO_URL = process.env.AVISO_URL || "";
+// Protección contra abuso: el chat web es anónimo, cualquiera puede escribir
+const WEB_MAX_POR_VISITANTE = Number(process.env.WEB_MAX_POR_VISITANTE) || 20; // mensajes
+const WEB_VENTANA_MS = 10 * 60 * 1000; // ...cada 10 minutos
+const WEB_MAX_DIA = Number(process.env.WEB_MAX_DIA) || 600; // tope total diario del canal web
+const WEB_MAX_CARACTERES = 600;
 
 // Proveedor de IA:
 //   "gemini"    -> gratuito, límites de tokens amplios (ideal para prompts grandes)
@@ -362,7 +380,7 @@ function registrar(datos) {
   const completo = LOG_MODO === "completo";
   const fila = {
     fecha: new Date().toISOString(),
-    usuario: completo ? `+${datos.telefono}` : seudonimo(datos.telefono),
+    usuario: datos.usuario || (completo ? `+${datos.telefono}` : seudonimo(datos.telefono)),
     mensaje: completo ? datos.mensaje : "",
     respuesta: completo ? datos.respuesta : "",
     caracteres_mensaje: (datos.mensaje || "").length,
@@ -380,6 +398,26 @@ function registrar(datos) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(fila),
   }).catch((e) => console.error("⚠️ Bitácora no registrada:", e.message));
+}
+
+// ------------------------------------------------------------
+// Decide si toca ofrecer la encuesta. Lo usan WhatsApp y el chat web.
+//  a) la persona la pide (raíces: calific*, evalú*, opini*...)
+//  b) el asistente PROMETIÓ enviarla (hay que cumplirlo)
+//  c) cierre de conversación, una sola vez por conversación
+// ------------------------------------------------------------
+function tocaEncuesta(textoUsuario, textoRespuesta, cierraConversacion, historial) {
+  const pide =
+    /(\bqr\b|encuesta|eval[uú]|calific|puntu|opini|opinar|sugerenc|coment)/i.test(textoUsuario);
+  const prometio =
+    /(c[oó]digo qr|\bqr\b|evaluaci[oó]n del servicio|breve evaluaci[oó]n|encuesta)/i.test(
+      textoRespuesta
+    );
+  const despedida =
+    /\b(gracias|muchas gracias|adi[oó]s|hasta luego|eso es todo|es todo|nada m[aá]s|listo)\b/i.test(
+      textoUsuario
+    );
+  return pide || prometio || ((cierraConversacion || despedida) && !historial.encuestaEnviada);
 }
 
 // ------------------------------------------------------------
@@ -496,27 +534,7 @@ app.post("/webhook", async (req, res) => {
 
     historial.mensajes.push({ role: "assistant", content: textoRespuesta });
 
-    // Encuesta de satisfacción — tres disparadores
-    // a) La persona la pide (raíces de palabra: calific*, evalú*, opini*...).
-    const pideEncuesta =
-      /(\bqr\b|encuesta|eval[uú]|calific|puntu|opini|opinar|sugerenc|coment)/i.test(
-        texto
-      );
-    // b) El bot PROMETIÓ enviarla: si lo dice, hay que cumplirlo.
-    const prometioEncuesta =
-      /(c[oó]digo qr|\bqr\b|evaluaci[oó]n del servicio|breve evaluaci[oó]n|encuesta)/i.test(
-        textoRespuesta
-      );
-    // c) Cierre de conversación: una sola vez por conversación.
-    const despedida =
-      /\b(gracias|muchas gracias|adi[oó]s|hasta luego|eso es todo|es todo|nada m[aá]s|listo)\b/i.test(
-        texto
-      );
-
-    const tocaEncuesta =
-      pideEncuesta ||
-      prometioEncuesta ||
-      ((cierraConversacion || despedida) && !historial.encuestaEnviada);
+    const debeEncuesta = tocaEncuesta(texto, textoRespuesta, cierraConversacion, historial);
 
     // Cada mensaje saliente se factura (Meta cobra los mensajes de servicio
     // desde el 1 de octubre de 2026). Cuando toca enviar la encuesta se intenta
@@ -524,7 +542,7 @@ app.post("/webhook", async (req, res) => {
     // sale un solo mensaje en lugar de dos.
     let salientes = 0;
 
-    if (tocaEncuesta) {
+    if (debeEncuesta) {
       historial.encuestaEnviada = true;
       if (await enviarEncuesta(telefono, textoRespuesta)) {
         salientes = 1; // fusionado
@@ -545,7 +563,7 @@ app.post("/webhook", async (req, res) => {
       respuesta: textoRespuesta,
       resultado: "ok",
       ms: Date.now() - t0,
-      encuesta: tocaEncuesta,
+      encuesta: debeEncuesta,
       salientes,
     });
   } catch (err) {
@@ -643,6 +661,137 @@ async function marcarLeido(messageId) {
     }),
   });
 }
+
+// ------------------------------------------------------------
+// CANAL WEB — chat embebido en el sitio del CENAME
+// ------------------------------------------------------------
+// Sin costo de Meta: la respuesta viaja directo al navegador. Solo se consume
+// el modelo de IA, igual que en WhatsApp.
+//
+// Protecciones, porque a diferencia de WhatsApp el visitante es anónimo:
+//   1. Solo aceptan peticiones los dominios de WEB_ORIGENES (CORS).
+//   2. Límite de mensajes por visitante (IP) en una ventana de tiempo.
+//   3. Tope diario total del canal, para que un ataque distribuido no
+//      agote la cuota del modelo de IA.
+// ------------------------------------------------------------
+const limitesWeb = new Map(); // ip -> { n, desde }
+let contadorDia = { fecha: new Date().toDateString(), n: 0 };
+
+function excedeLimiteWeb(ip) {
+  const ahora = Date.now();
+  const hoy = new Date().toDateString();
+  if (contadorDia.fecha !== hoy) contadorDia = { fecha: hoy, n: 0 };
+  if (contadorDia.n >= WEB_MAX_DIA) return "dia";
+
+  const r = limitesWeb.get(ip);
+  if (!r || ahora - r.desde > WEB_VENTANA_MS) {
+    limitesWeb.set(ip, { n: 1, desde: ahora });
+  } else {
+    if (r.n >= WEB_MAX_POR_VISITANTE) return "visitante";
+    r.n++;
+  }
+  contadorDia.n++;
+  return null;
+}
+setInterval(() => {
+  const ahora = Date.now();
+  for (const [ip, r] of limitesWeb) if (ahora - r.desde > WEB_VENTANA_MS) limitesWeb.delete(ip);
+}, 1000 * 60 * 15);
+
+function aplicarCors(req, res) {
+  const origen = req.headers.origin;
+  if (origen && WEB_ORIGENES.includes(origen)) {
+    res.set("Access-Control-Allow-Origin", origen);
+    res.set("Vary", "Origin");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+    return true;
+  }
+  return false;
+}
+
+app.options("/chat", (req, res) => {
+  aplicarCors(req, res);
+  res.sendStatus(204);
+});
+
+app.post("/chat", async (req, res) => {
+  if (!aplicarCors(req, res)) return res.status(403).json({ error: "origen_no_autorizado" });
+
+  const { sesion, mensaje } = req.body || {};
+  if (typeof sesion !== "string" || !/^[a-zA-Z0-9-]{8,64}$/.test(sesion)) {
+    return res.status(400).json({ error: "sesion_invalida" });
+  }
+  const texto = typeof mensaje === "string" ? mensaje.trim() : "";
+  if (!texto) return res.status(400).json({ error: "mensaje_vacio" });
+  if (texto.length > WEB_MAX_CARACTERES) return res.status(400).json({ error: "mensaje_largo" });
+
+  const limite = excedeLimiteWeb(req.ip);
+  if (limite) {
+    console.warn(`⛔ Web: límite ${limite} alcanzado (ip ${req.ip})`);
+    return res.status(429).json({ error: limite === "dia" ? "limite_diario" : "limite_visitante" });
+  }
+
+  const clave = `web:${sesion}`;
+  const usuario = `WEB-${sesion.slice(0, 8)}`;
+  const t0 = Date.now();
+  console.log(`🌐 [${usuario}]: ${texto}`);
+
+  try {
+    const historial = obtenerHistorial(clave);
+    historial.mensajes.push({ role: "user", content: texto });
+    if (historial.mensajes.length > MAX_TURNOS) {
+      historial.mensajes = historial.mensajes.slice(-MAX_TURNOS);
+    }
+    historial.ultimaActividad = Date.now();
+
+    let respuesta = await consultarLLM(historial.mensajes);
+    const cierra = /\[ENCUESTA\]/i.test(respuesta);
+    respuesta = respuesta.replace(/\[ENCUESTA\]/gi, "").trim();
+
+    if (!respuesta) {
+      historial.mensajes.pop();
+      registrar({ telefono: clave, usuario, mensaje: texto, respuesta: "", resultado: "vacia", ms: Date.now() - t0, salientes: 0 });
+      return res.json({
+        respuesta:
+          "No pude generar la respuesta en este momento. Intente reformular su consulta, o escriba a info@cename.gt.",
+        encuesta: null,
+      });
+    }
+
+    historial.mensajes.push({ role: "assistant", content: respuesta });
+
+    const debeEncuesta = tocaEncuesta(texto, respuesta, cierra, historial);
+    if (debeEncuesta) historial.encuestaEnviada = true;
+
+    // mensajes_salientes = 0: en la web no hay mensajes facturables de Meta
+    registrar({ telefono: clave, usuario, mensaje: texto, respuesta, resultado: "ok", ms: Date.now() - t0, encuesta: debeEncuesta, salientes: 0 });
+
+    res.json({ respuesta, encuesta: debeEncuesta ? ENCUESTA_LINK : null });
+  } catch (err) {
+    console.error("❌ Web: error procesando mensaje:", err.message);
+    registrar({ telefono: clave, usuario, mensaje: texto, respuesta: "", resultado: err.cuotaAgotada ? "cuota_agotada" : "error", salientes: 0 });
+    res.status(err.cuotaAgotada ? 503 : 500).json({ error: err.cuotaAgotada ? "cuota_agotada" : "error_interno" });
+  }
+});
+
+// El widget se sirve desde aquí, con su configuración ya incrustada.
+// Así, en WordPress basta una sola línea <script> y cualquier cambio del
+// chat se publica desde este servidor, sin tocar el sitio.
+const WIDGET_PLANTILLA = fs.readFileSync(path.join(__dirname, "web", "widget.js"), "utf8");
+
+app.get("/widget.js", (req, res) => {
+  const base = BASE_URL || `${req.protocol}://${req.get("host")}`;
+  const cfg = {
+    api: `${base}/chat`,
+    aviso: AVISO_URL,
+    nombre: negocio.nombre,
+  };
+  res
+    .type("application/javascript")
+    .set("Cache-Control", "public, max-age=300")
+    .send(WIDGET_PLANTILLA.replace("__CENAME_CFG__", JSON.stringify(cfg)));
+});
 
 // ------------------------------------------------------------
 // Endpoint de salud (útil para Railway/Render y monitoreo)

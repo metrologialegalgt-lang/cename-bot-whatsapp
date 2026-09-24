@@ -85,6 +85,18 @@ const anthropic =
     ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
     : null;
 
+// Modelos que se quedaron sin cuota diaria. La cuota de Gemini es POR MODELO:
+// que uno se agote no significa que el otro también. Un modelo agotado se
+// salta durante un rato en lugar de llamarlo en cada consulta.
+const modelosAgotados = new Map(); // modelo -> instante hasta el que se omite
+const AGOTADO_MS = 15 * 60 * 1000;
+function estaAgotado(modelo) {
+  const hasta = modelosAgotados.get(modelo);
+  if (!hasta) return false;
+  if (Date.now() > hasta) { modelosAgotados.delete(modelo); return false; }
+  return true;
+}
+
 // Llamada unificada al LLM: recibe el historial, devuelve el texto de respuesta
 async function consultarLLM(mensajes, sistema) {
   sistema = sistema || SYSTEM_PROMPT;
@@ -130,7 +142,7 @@ async function consultarLLM(mensajes, sistema) {
       { modelo: alterno, nivel: "minimal", tokens: 3000, espera: 8000 },
     ];
     const PRESUPUESTO_MS = Number(process.env.GEMINI_PRESUPUESTO_MS) || 45000;
-    const LIMITE_LLAMADA_MS = 20000; // una sola llamada a Gemini no puede tardar más
+    const LIMITE_LLAMADA_MS = Number(process.env.GEMINI_LIMITE_LLAMADA_MS) || 25000; // una llamada no puede tardar más
     const TRANSITORIOS = [500, 502, 503, 504];
     const inicio = Date.now();
     let ultimoError = null;
@@ -147,6 +159,7 @@ async function consultarLLM(mensajes, sistema) {
 
     for (let i = 0; i < intentos.length; i++) {
       const { modelo, nivel, tokens, espera } = intentos[i];
+      if (estaAgotado(modelo)) continue; // sin cuota: ni se llama, ni se espera
       if (i > 0 && Date.now() - inicio + espera > PRESUPUESTO_MS) {
         console.warn(`⏱️ Gemini: presupuesto de tiempo agotado tras ${i} intentos`);
         break;
@@ -189,8 +202,12 @@ async function consultarLLM(mensajes, sistema) {
         const detalle = await resp.text();
         const err = new Error(`Gemini API ${resp.status}: ${detalle}`);
         if (resp.status === 429) {
+          // Se agotó la cuota de ESTE modelo. Se marca y se sigue con el otro.
+          modelosAgotados.set(modelo, Date.now() + AGOTADO_MS);
+          console.warn(`🚫 ${modelo} sin cuota; se omite durante ${AGOTADO_MS / 60000} min`);
           err.cuotaAgotada = true;
-          throw err; // no se reintenta: solo gastaría más cuota
+          if (!ultimoError || ultimoError.cuotaAgotada) ultimoError = err;
+          continue;
         }
         if (TRANSITORIOS.includes(resp.status)) {
           err.saturado = true;
@@ -217,7 +234,17 @@ async function consultarLLM(mensajes, sistema) {
           `modelo=${modelo} nivel=${nivel} tokens=${tokens} | razonamiento=${u.thoughtsTokenCount ?? "?"} salida=${u.candidatesTokenCount ?? "?"}`
       );
     }
-    if (ultimoError) throw ultimoError;
+    const modelos = [...new Set(intentos.map((x) => x.modelo))];
+    if (modelos.every(estaAgotado)) {
+      const err = new Error(`Gemini: todos los modelos sin cuota (${modelos.join(", ")})`);
+      err.cuotaAgotada = true;
+      throw err;
+    }
+    if (ultimoError) {
+      // Si hubo saturación en un modelo con cuota disponible, eso es lo que se informa
+      if (ultimoError.cuotaAgotada) { ultimoError.cuotaAgotada = false; ultimoError.saturado = true; }
+      throw ultimoError;
+    }
     return "";
   }
 

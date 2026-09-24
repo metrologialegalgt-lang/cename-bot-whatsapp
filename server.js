@@ -599,10 +599,12 @@ function tocaEncuesta(textoUsuario, textoRespuesta, cierraConversacion, historia
       textoUsuario
     );
   // Salvaguarda: si la persona está preguntando algo, la conversación no está
-  // cerrando, aunque el modelo haya puesto la marca [ENCUESTA] por error.
+  // cerrando. Aplica tanto a la marca [ENCUESTA] del modelo como a las
+  // despedidas: en "¿cuál es el siguiente curso? Gracias", el "gracias" es
+  // cortesía, no un cierre.
   const esPregunta = /[¿?]/.test(textoUsuario);
-  const cierreValido = cierraConversacion && !esPregunta;
-  return pide || prometio || ((cierreValido || despedida) && !historial.encuestaEnviada);
+  const cierreValido = (cierraConversacion || despedida) && !esPregunta;
+  return pide || prometio || (cierreValido && !historial.encuestaEnviada);
 }
 
 // ------------------------------------------------------------
@@ -955,6 +957,7 @@ app.post("/chat", async (req, res) => {
     const debeEncuesta = tocaEncuesta(texto, respuesta, cierra, historial);
     if (debeEncuesta) historial.encuestaEnviada = true;
 
+    console.log(`📤 [${usuario}]: ${respuesta.slice(0, 80)}...${debeEncuesta ? " (+ encuesta)" : ""} (${Date.now() - t0} ms)`);
     // mensajes_salientes = 0: en la web no hay mensajes facturables de Meta
     registrar({ telefono: clave, usuario, mensaje: texto, respuesta, resultado: "ok", ms: Date.now() - t0, encuesta: debeEncuesta, salientes: 0 });
 

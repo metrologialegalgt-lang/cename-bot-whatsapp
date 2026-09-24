@@ -160,15 +160,18 @@ async function consultarLLM(mensajes, sistema) {
     for (let i = 0; i < intentos.length; i++) {
       const { modelo, nivel, tokens, espera } = intentos[i];
       if (estaAgotado(modelo)) continue; // sin cuota: ni se llama, ni se espera
-      if (i > 0 && Date.now() - inicio + espera > PRESUPUESTO_MS) {
-        console.warn(`⏱️ Gemini: presupuesto de tiempo agotado tras ${i} intentos`);
+      const restante = PRESUPUESTO_MS - (Date.now() - inicio) - espera;
+      // No se inicia un intento nuevo si ya no hay tiempo para que responda:
+      // una consulta lenta NO se abandona para mandar otra.
+      if (i > 0 && restante < 15000) {
+        console.warn(`⏱️ Gemini: sin tiempo para otro intento tras ${i} (${Date.now() - inicio} ms)`);
         break;
       }
       if (espera) await new Promise((r) => setTimeout(r, espera));
 
       let resp;
       const ctrl = new AbortController();
-      const corte = setTimeout(() => ctrl.abort(), LIMITE_LLAMADA_MS);
+      const corte = setTimeout(() => ctrl.abort(), Math.min(LIMITE_LLAMADA_MS, Math.max(restante, 15000)));
       try {
         resp = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`,
@@ -286,7 +289,10 @@ function construirSystemPrompt(n, sel) {
   const secciones = [];
 
   secciones.push(
-    `Eres el asistente virtual de "${n.nombre}", ${n.descripcion}. Atiendes por chat (WhatsApp o el sitio web).`
+    (n.nombre_asistente
+      ? `Te llamas ${n.nombre_asistente}${n.titulo_asistente ? `, ${n.titulo_asistente}` : ""}. Eres el asistente virtual automatizado de "${n.nombre}", ${n.descripcion}. Si te preguntan quién eres, preséntate por tu nombre y aclara que eres un asistente automatizado del CENAME; nunca afirmes ni des a entender que eres una persona.`
+      : `Eres el asistente virtual de "${n.nombre}", ${n.descripcion}.`) +
+      ` Atiendes por chat (WhatsApp o el sitio web).`
   );
 
   // --- Reglas base + reglas extra opcionales del JSON ---
@@ -969,10 +975,19 @@ const WIDGET_PLANTILLA = fs.readFileSync(path.join(__dirname, "web", "widget.js"
 
 app.get("/widget.js", (req, res) => {
   const base = BASE_URL || `${req.protocol}://${req.get("host")}`;
+  const presupuesto = Number(process.env.GEMINI_PRESUPUESTO_MS) || 45000;
   const cfg = {
     api: `${base}/chat`,
     aviso: AVISO_URL,
     nombre: negocio.nombre,
+    asistente: negocio.nombre_asistente || "Asistente",
+    titulo: negocio.titulo_asistente || "",
+    avatar: fs.existsSync(path.join(__dirname, "public", "balamper-avatar.png"))
+      ? `${base}/balamper-avatar.png`
+      : "",
+    // El navegador espera más que el servidor, para no abandonar una
+    // respuesta que todavía se está generando.
+    espera: presupuesto + 25000,
   };
   res
     .type("application/javascript")

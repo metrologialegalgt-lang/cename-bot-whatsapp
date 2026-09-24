@@ -86,12 +86,13 @@ const anthropic =
     : null;
 
 // Llamada unificada al LLM: recibe el historial, devuelve el texto de respuesta
-async function consultarLLM(mensajes) {
+async function consultarLLM(mensajes, sistema) {
+  sistema = sistema || SYSTEM_PROMPT;
   if (LLM_PROVIDER === "anthropic") {
     const respuesta = await anthropic.messages.create({
       model: MODEL,
       max_tokens: 500,
-      system: SYSTEM_PROMPT,
+      system: sistema,
       messages: mensajes,
     });
     return respuesta.content
@@ -166,7 +167,7 @@ async function consultarLLM(mensajes) {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+              system_instruction: { parts: [{ text: sistema }] },
               contents: contenidos,
               generationConfig: {
                 maxOutputTokens: tokens,
@@ -230,7 +231,7 @@ async function consultarLLM(mensajes) {
     body: JSON.stringify({
       model: MODEL,
       max_tokens: 500,
-      messages: [{ role: "system", content: SYSTEM_PROMPT }, ...mensajes],
+      messages: [{ role: "system", content: sistema }, ...mensajes],
     }),
   });
   if (!resp.ok) {
@@ -254,17 +255,17 @@ console.log(`🧠 IA: ${LLM_PROVIDER} — modelo: ${MODEL}`);
 // Para agregar un cliente nuevo NO se toca el código,
 // solo se crea otro archivo en /config.
 // ------------------------------------------------------------
-function construirSystemPrompt(n) {
+function construirSystemPrompt(n, sel) {
   const secciones = [];
 
   secciones.push(
-    `Eres el asistente virtual de WhatsApp de "${n.nombre}", ${n.descripcion}.`
+    `Eres el asistente virtual de "${n.nombre}", ${n.descripcion}. Atiendes por chat (WhatsApp o el sitio web).`
   );
 
   // --- Reglas base + reglas extra opcionales del JSON ---
   const reglas = [
     `Responde SIEMPRE en español, con tono ${n.tono || "amable y cercano"}.`,
-    `Respuestas cortas y claras: esto es WhatsApp, no un correo. Máximo 4-5 líneas salvo que pidan detalle.`,
+    `Respuestas cortas y claras: esto es un chat, no un correo. Máximo 4-5 líneas salvo que pidan detalle.`,
     `Usa ÚNICAMENTE la información de este documento. Si no sabes algo, dilo con honestidad y deriva al contacto indicado: ${n.contacto_humano}.`,
     `Nunca inventes precios, tarifas, plazos, alcances ni horarios. Si una tarifa no aparece aquí, di que debe consultarse con el laboratorio o área responsable.`,
     `Puedes usar emojis con moderación (1-2 por mensaje).`,
@@ -302,25 +303,34 @@ function construirSystemPrompt(n) {
   }
 
   // --- Tarifario agrupado por área (formato institucional) ---
+  // Con selección: índice breve de TODAS las áreas + tarifas detalladas solo de
+  // las áreas relacionadas con la consulta. Sin selección: el tarifario completo.
   if (Array.isArray(n.tarifario) && n.tarifario.length) {
-    secciones.push(
-      "TARIFARIO VIGENTE (" +
-        (n.base_legal || "tarifario oficial") +
-        "):\n" +
-        n.tarifario
-          .map(
-            (a) =>
-              `▸ ${a.area}${a.articulo ? ` (${a.articulo})` : ""}\n` +
-              a.items
-                .map(
-                  (i) =>
-                    `   • ${i.servicio}: ${i.tarifa}${i.nota ? ` — ${i.nota}` : ""}`
-                )
-                .join("\n") +
-              (a.nota ? `\n   ⚠ ${a.nota}` : "")
-          )
-          .join("\n\n")
-    );
+    const pintarArea = (a) =>
+      `▸ ${a.area}${a.articulo ? ` (${a.articulo})` : ""}\n` +
+      a.items
+        .map((i) => `   • ${i.servicio}: ${i.tarifa}${i.nota ? ` — ${i.nota}` : ""}`)
+        .join("\n") +
+      (a.nota ? `\n   ⚠ ${a.nota}` : "");
+    const titulo = "TARIFARIO VIGENTE (" + (n.base_legal || "tarifario oficial") + ")";
+
+    if (!sel || sel.todo) {
+      secciones.push(titulo + ":\n" + n.tarifario.map(pintarArea).join("\n\n"));
+    } else {
+      secciones.push(
+        "ÍNDICE DE SERVICIOS DISPONIBLES (todas las áreas que atiende el CENAME):\n" +
+          n.tarifario.map((a) => `- ${a.area}`).join("\n")
+      );
+      const elegidas = n.tarifario.filter((_, i) => sel.areas.has(i));
+      secciones.push(
+        titulo +
+          " — tarifas detalladas de las áreas relacionadas con esta consulta:\n" +
+          (elegidas.length
+            ? elegidas.map(pintarArea).join("\n\n")
+            : "(Ninguna área coincide con la consulta.)") +
+          "\n\nIMPORTANTE: solo ves aquí el detalle de algunas áreas. Si la persona pregunta por un servicio que está en el ÍNDICE pero cuyas tarifas no aparecen arriba, NO digas que no está disponible y NO inventes montos: pídele que indique el instrumento específico (qué mide, capacidad o intervalo) para darle la tarifa exacta."
+      );
+    }
   }
 
   // --- Servicios que NO se prestan actualmente ---
@@ -361,12 +371,14 @@ function construirSystemPrompt(n) {
     secciones.push("ENCUESTA DE SATISFACCIÓN:\n" + n.encuesta_satisfaccion);
   }
 
-  // --- FAQ ---
+  // --- FAQ (con selección, solo las relacionadas con la consulta) ---
   if (Array.isArray(n.faq) && n.faq.length) {
-    secciones.push(
-      "PREGUNTAS FRECUENTES:\n" +
-        n.faq.map((f) => `P: ${f.p}\nR: ${f.r}`).join("\n\n")
-    );
+    const faqs = !sel || sel.todo ? n.faq : n.faq.filter((_, i) => sel.faq.has(i));
+    if (faqs.length) {
+      secciones.push(
+        "PREGUNTAS FRECUENTES:\n" + faqs.map((f) => `P: ${f.p}\nR: ${f.r}`).join("\n\n")
+      );
+    }
   }
 
   secciones.push(`MARCADOR ESPECIAL (invisible para la persona, úsalo con disciplina):
@@ -380,6 +392,81 @@ Nunca menciones este marcador ni expliques que existe.`);
 }
 
 const SYSTEM_PROMPT = construirSystemPrompt(negocio);
+
+// ------------------------------------------------------------
+// Selección de contexto: en lugar de enviar el tarifario completo con cada
+// mensaje, se envían solo las áreas y preguntas frecuentes relacionadas con
+// lo que la persona pregunta. Reduce el costo por mensaje y hace rendir más
+// las cuotas gratuitas.
+//
+// Cada área del tarifario y cada FAQ puede tener un arreglo "claves" en el
+// JSON. Se busca cada clave dentro del texto de la persona, sin distinguir
+// mayúsculas ni tildes. Si un área no tiene claves, se usan las palabras de
+// su nombre.
+// ------------------------------------------------------------
+function normalizar(s) {
+  return (
+    " " +
+    String(s)
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/(\d)([a-z])/g, "$1 $2")
+      .replace(/([a-z])(\d)/g, "$1 $2")
+      .replace(/[^a-z0-9°%]+/g, " ")
+      .trim() +
+    " "
+  );
+}
+
+// Pide explícitamente todo el tarifario
+const PIDE_TODO = /(todas? (las )?tarifas|todos (los )?(precios|servicios)|tarifario completo|lista (completa )?de precios|todo el tarifario)/;
+
+function clavesDe(item, nombre) {
+  if (Array.isArray(item.claves) && item.claves.length) return item.claves.map(normalizar);
+  // Sin claves: palabras significativas del nombre (de 5 letras o más)
+  return normalizar(nombre)
+    .split(" ")
+    .filter((w) => w.length >= 5)
+    .map((w) => ` ${w.slice(0, 7)}`);
+}
+
+// Precalcula las claves una sola vez al arrancar
+const INDICE_CLAVES = {
+  areas: (negocio.tarifario || []).map((a) => clavesDe(a, a.area)),
+  faq: (negocio.faq || []).map((f) => clavesDe(f, f.p)),
+};
+
+// Cada clave debe coincidir desde el INICIO de una palabra del mensaje:
+// "manometr" atrapa "manómetros", pero "libra" NO se activa dentro de
+// "calibrar". Las claves cortas (3 letras o menos, como "ph" o "kg") deben
+// coincidir con la palabra completa.
+function coincide(textoNorm, claves) {
+  return claves.some((c) => {
+    const k = c.trim();
+    return textoNorm.includes(k.length <= 3 ? ` ${k} ` : ` ${k}`);
+  });
+}
+
+function seleccionarContexto(textoPersona) {
+  const t = normalizar(textoPersona);
+  const sel = { areas: new Set(), faq: new Set(), todo: PIDE_TODO.test(t) };
+  INDICE_CLAVES.areas.forEach((claves, i) => { if (coincide(t, claves)) sel.areas.add(i); });
+  INDICE_CLAVES.faq.forEach((claves, i) => { if (coincide(t, claves)) sel.faq.add(i); });
+  return sel;
+}
+
+// Arma el prompt para una conversación mirando las últimas 3 preguntas de la
+// persona, para que las continuaciones ("¿y el de 50 kg?") conserven el tema.
+function promptPara(historial) {
+  if (!Array.isArray(negocio.tarifario)) return SYSTEM_PROMPT; // negocios sin tarifario
+  const recientes = historial.mensajes
+    .filter((m) => m.role === "user")
+    .slice(-3)
+    .map((m) => m.content)
+    .join(" \n ");
+  return construirSystemPrompt(negocio, seleccionarContexto(recientes));
+}
 
 // ------------------------------------------------------------
 // Historial de conversación en memoria (por número de teléfono).
@@ -576,7 +663,7 @@ app.post("/webhook", async (req, res) => {
     }
     historial.ultimaActividad = Date.now();
 
-    let textoRespuesta = await consultarLLM(historial.mensajes);
+    let textoRespuesta = await consultarLLM(historial.mensajes, promptPara(historial));
 
     // --- Marcador [ENCUESTA]: la IA indica que la conversación concluyó ---
     const cierraConversacion = /\[ENCUESTA\]/i.test(textoRespuesta);
@@ -816,7 +903,7 @@ app.post("/chat", async (req, res) => {
     }
     historial.ultimaActividad = Date.now();
 
-    let respuesta = await consultarLLM(historial.mensajes);
+    let respuesta = await consultarLLM(historial.mensajes, promptPara(historial));
     const cierra = /\[ENCUESTA\]/i.test(respuesta);
     respuesta = respuesta.replace(/\[ENCUESTA\]/gi, "").trim();
 

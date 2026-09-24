@@ -75,13 +75,61 @@
 
     /* Botón que abre el chat */
     ".lanzador{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:2147483000;",
-    "display:flex;align-items:center;background:var(--tinta);color:#fff;border:0;border-radius:28px;",
-    "padding:13px 20px 13px 16px;font:inherit;font-weight:600;cursor:pointer;",
+    "display:flex;align-items:center;background:var(--tinta);color:#fff;border:0;border-radius:36px;",
+    "padding:5px 20px 5px 5px;font:inherit;font-weight:600;cursor:pointer;",
     "box-shadow:0 6px 20px rgba(15,42,71,.35)}",
-    ".lanzador svg{width:22px;height:22px;margin-right:9px;flex-shrink:0}",
+    ".lanzador svg{width:22px;height:22px;margin:0 9px 0 11px;flex-shrink:0}",
+    ".lanzador img{width:56px;height:56px;border-radius:50%;margin-right:11px;flex-shrink:0;border:2px solid #fff;background:#FFF1D6}",
+    ".lanzador .l1{display:block;font-size:15px;line-height:1.15}",
+    ".lanzador .l2{display:block;font-size:12px;font-weight:400;color:#B9C6D6;line-height:1.2}",
+    ".lanzador .textos{text-align:left}",
     ".lanzador:hover{background:#163A60}",
     ".lanzador[aria-expanded=true]{display:none}",
 
+
+    /* ---- B'alamper como lanzador ---- */
+    ".mascota-cont{position:fixed;right:18px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:2147483000}",
+    ".lanzador.mascota{position:relative;right:auto;bottom:auto;display:block;background:none;box-shadow:none;",
+    "padding:0;border-radius:16px;color:inherit}",
+    ".lanzador.mascota:hover{background:none}",
+    ".lanzador.mascota:focus-visible{outline:3px solid #1D5C99;outline-offset:4px}",
+    ".mascota .cuerpo{position:relative;display:block}",
+    ".mascota img{display:block;height:130px;width:auto;border:0;border-radius:0;margin:0;background:none;",
+    "filter:drop-shadow(0 6px 10px rgba(15,42,71,.28));transform-origin:50% 92%;transition:transform .25s ease}",
+    ".mascota:hover img,.mascota:focus-visible img{transform:rotate(-5deg) scale(1.05)}",
+    ".mascota:active img{transform:scale(.93)}",
+    /* chispas del enchufe */
+    ".chispas{position:absolute;left:0;top:34%;width:36%;height:28%;pointer-events:none}",
+    ".chispas svg{position:absolute;width:30%;fill:#6FE6F5;opacity:0;filter:drop-shadow(0 0 4px #2FD3EA)}",
+    ".chispas svg:nth-child(1){left:6%;top:0}",
+    ".chispas svg:nth-child(2){left:55%;top:14%}",
+    ".chispas svg:nth-child(3){left:22%;top:58%}",
+    ".mascota:hover .chispas svg,.mascota:focus-visible .chispas svg{opacity:.9}",
+    /* globo de saludo */
+    ".globo{position:absolute;right:96px;bottom:92px;width:224px;background:#fff;color:var(--tinta);",
+    "border-radius:14px;padding:12px 32px 12px 14px;font-size:14px;line-height:1.4;",
+    "box-shadow:0 10px 30px rgba(15,42,71,.22)}",
+    ".globo[hidden]{display:none}",
+    ".globo::after{content:'';position:absolute;right:-6px;bottom:20px;width:13px;height:13px;background:#fff;",
+    "transform:rotate(45deg);border-radius:2px}",
+    ".globo-texto{display:block;width:100%;text-align:left;background:none;border:0;padding:0;font:inherit;",
+    "color:inherit;cursor:pointer}",
+    ".globo-cerrar{position:absolute;top:5px;right:6px;width:26px;height:26px;border:0;background:none;",
+    "font-size:18px;line-height:1;color:var(--acero);cursor:pointer;border-radius:6px}",
+    ".globo-cerrar:hover{background:var(--papel)}",
+    /* movimiento: solo si la persona no pidió reducirlo */
+    "@media (prefers-reduced-motion:no-preference){",
+    ".mascota .cuerpo{animation:flota 4.2s ease-in-out infinite}",
+    ".mascota-cont.asoma{animation:asoma .55s cubic-bezier(.2,1.4,.4,1) both}",
+    ".mascota.saluda img{animation:salto .65s ease 2}",
+    ".mascota.saluda .chispas svg,.mascota:hover .chispas svg,.mascota:focus-visible .chispas svg{animation:chispa .9s ease-in-out infinite}",
+    ".chispas svg:nth-child(2){animation-delay:.3s!important}",
+    ".chispas svg:nth-child(3){animation-delay:.55s!important}",
+    ".globo.entra{animation:entra .25s ease-out}}",
+    "@keyframes flota{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}",
+    "@keyframes asoma{from{opacity:0;transform:translateY(40px) scale(.85)}to{opacity:1;transform:none}}",
+    "@keyframes salto{0%,100%{transform:translateY(0)}40%{transform:translateY(-14px) rotate(-4deg)}70%{transform:translateY(0) rotate(0)}}",
+    "@keyframes chispa{0%,100%{opacity:0;transform:scale(.6)}40%{opacity:1;transform:scale(1.1)}60%{opacity:.35}}",
     /* Panel */
     ".panel{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:2147483001;",
     "width:380px;height:min(600px,calc(100vh - 40px));background:var(--papel);border-radius:14px;",
@@ -92,9 +140,11 @@
     "@keyframes entra{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}",
 
     /* Encabezado con la escala graduada */
-    ".cabecera{background:var(--tinta);color:#fff;padding:16px 16px 0;position:relative}",
-    ".titulo{font-weight:700;font-size:16px;padding-right:40px}",
-    ".subtitulo{font-size:13px;color:#B9C6D6;margin-top:2px;padding-right:40px}",
+    ".cabecera{background:var(--tinta);color:#fff;padding:14px 16px 0;position:relative}",
+    ".identidad{display:flex;align-items:center;padding-right:40px}",
+    ".identidad img{width:44px;height:44px;border-radius:50%;margin-right:11px;flex-shrink:0;border:2px solid #fff;background:#FFF1D6}",
+    ".titulo{font-weight:700;font-size:16px}",
+    ".subtitulo{font-size:13px;color:#B9C6D6;margin-top:1px}",
     ".cerrar{position:absolute;top:10px;right:10px;width:36px;height:36px;border:0;border-radius:8px;",
     "background:transparent;color:#fff;cursor:pointer;font:inherit;font-size:22px;line-height:1}",
     ".cerrar:hover{background:rgba(255,255,255,.12)}",
@@ -150,9 +200,14 @@
 
     /* Móvil: pantalla completa */
     "@media (max-width:520px){.panel{right:0;bottom:0;width:100%;height:100%;border-radius:0}",
-    ".lanzador{right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px))}}",
+    ".lanzador{right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));padding:4px}",
+    ".lanzador.con-avatar .textos{display:none}.lanzador.con-avatar img{margin-right:0}",
+    ".mascota img{height:100px}.mascota-cont{right:10px}",
+    ".globo{right:74px;bottom:70px;width:190px;font-size:13px}}",
   ].join("");
 
+  var RAYO =
+    '<svg viewBox="0 0 13 16" aria-hidden="true"><path d="M8 0 2 9h4l-2 7 7-10H7l2-6z"/></svg>';
   var ICONO =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/></svg>';
 
@@ -163,12 +218,26 @@
   sombra.innerHTML =
     "<style>" + ESTILOS + "</style>" +
     '<div class="raiz">' +
-    '<button class="lanzador" type="button" aria-expanded="false" aria-controls="panel" aria-label="Abrir el asistente del CENAME">' +
-    ICONO + "Consultas</button>" +
-    '<section class="panel" id="panel" role="dialog" aria-label="Asistente del CENAME" hidden>' +
+    (CFG.figura
+      ? '<div class="mascota-cont asoma">' +
+        '<div class="globo" hidden role="status">' +
+        '<button class="globo-texto" type="button">¡Hola! Soy <strong>' + escapar(CFG.asistente) + '</strong>. ¿Le ayudo con tarifas o servicios del CENAME?</button>' +
+        '<button class="globo-cerrar" type="button" aria-label="Cerrar el saludo">&times;</button></div>' +
+        '<button class="lanzador mascota" type="button" aria-expanded="false" aria-controls="panel" aria-label="Abrir el chat con ' + escapar(CFG.asistente) + ', asistente del CENAME">' +
+        '<span class="cuerpo"><img src="' + escapar(CFG.figura) + '" alt="">' +
+        '<span class="chispas" aria-hidden="true">' + RAYO + RAYO + RAYO + "</span></span></button></div>"
+      : "") +
+    (CFG.figura ? "" : '<button class="lanzador' + (CFG.avatar ? " con-avatar" : "") + '" type="button" aria-expanded="false" aria-controls="panel" aria-label="Abrir el chat con ' + escapar(CFG.asistente) + ', asistente del CENAME">' +
+    (CFG.avatar ? '<img src="' + escapar(CFG.avatar) + '" alt="">' : ICONO) +
+    '<span class="textos"><span class="l1">Pregúntele a ' + escapar(CFG.asistente) + '</span>' +
+    '<span class="l2">Tarifas y servicios del CENAME</span></span></button>') +
+    '<section class="panel" id="panel" role="dialog" aria-label="' + escapar(CFG.asistente) + ', asistente del CENAME" hidden>' +
     '<header class="cabecera">' +
-    '<div class="titulo">Asistente del CENAME</div>' +
-    '<div class="subtitulo">Tarifas, alcances y laboratorios</div>' +
+    '<div class="identidad">' +
+    (CFG.avatar ? '<img src="' + escapar(CFG.avatar) + '" alt="">' : "") +
+    '<div><div class="titulo">' + escapar(CFG.asistente) + '</div>' +
+    '<div class="subtitulo">' + escapar(CFG.titulo || "Asistente del CENAME") + '</div></div>' +
+    "</div>" +
     '<button class="cerrar" type="button" aria-label="Cerrar el asistente">&times;</button>' +
     '<div class="escala" aria-hidden="true"><div class="indice"></div></div>' +
     "</header>" +
@@ -199,6 +268,28 @@
   var botonEnviar = $(".enviar");
   var ocupado = false;
 
+  // ---------- B'alamper: saludo único por visita ----------
+  var contMascota = $(".mascota-cont");
+  var globo = $(".globo");
+  function ocultarGlobo() { if (globo) globo.hidden = true; }
+  if (globo) {
+    $(".globo-texto").addEventListener("click", function () { ocultarGlobo(); abrir(); });
+    $(".globo-cerrar").addEventListener("click", ocultarGlobo);
+    var yaSaludo = false;
+    try { yaSaludo = sessionStorage.getItem(CLAVE + ".saludo") === "1"; } catch (_) {}
+    if (!yaSaludo && !estado.abierto) {
+      setTimeout(function () {
+        if (!panel.hidden) return; // si ya abrió el chat, no interrumpe
+        globo.hidden = false;
+        globo.classList.add("entra");
+        lanzador.classList.add("saluda");
+        try { sessionStorage.setItem(CLAVE + ".saludo", "1"); } catch (_) {}
+        setTimeout(function () { lanzador.classList.remove("saluda"); }, 2600);
+        setTimeout(ocultarGlobo, 9000);
+      }, 3000);
+    }
+  }
+
   // ---------- Pintado ----------
   function burbuja(tipo, html) {
     var d = document.createElement("div");
@@ -223,7 +314,8 @@
     burbuja(
       "bot",
       formatear(
-        "Le atiende el asistente automatizado del CENAME. Puede preguntarme por *tarifas*, *alcances de medición*, *laboratorios* y *cursos*.\n\nPara atención de una persona del CENAME: info@cename.gt"
+        "Hola, soy *" + CFG.asistente + "*" + (CFG.titulo ? ", el " + CFG.titulo : "") +
+          ": el asistente automatizado del CENAME. Puedo ayudarle con *tarifas*, *alcances de medición*, *laboratorios* y *cursos*.\n\nPara atención de una persona del CENAME: info@cename.gt"
       )
     );
     var hayPreguntas = estado.mensajes.some(function (m) { return m.tipo === "usuario"; });
@@ -261,6 +353,7 @@
 
   // ---------- Abrir y cerrar ----------
   function abrir() {
+    ocultarGlobo();
     panel.hidden = false;
     panel.classList.remove("entra");
     void panel.offsetWidth; // reinicia la animación
@@ -274,6 +367,11 @@
   function cerrar() {
     panel.hidden = true;
     lanzador.setAttribute("aria-expanded", "false");
+    if (contMascota) {
+      contMascota.classList.remove("asoma");
+      void contMascota.offsetWidth; // reinicia la animación
+      contMascota.classList.add("asoma");
+    }
     estado.abierto = false;
     guardar();
     lanzador.focus();
@@ -313,14 +411,56 @@
     otro: "No se pudo procesar su consulta. Intente de nuevo, o escriba a info@cename.gt.",
   };
 
+  // Fallas pasajeras que vale la pena reintentar solas, sin molestar a la persona
+  // El servidor ya espera pacientemente la respuesta del modelo, así que el
+  // navegador reintenta una sola vez y nunca por "tiempo": sería mandar una
+  // consulta nueva mientras la anterior aún se está respondiendo.
+  var REINTENTABLES = { servicio_saturado: true, red: true };
+  var ESPERAS_AUTO = [5000];
+  // Debe ser MAYOR que el presupuesto de tiempo del servidor (unos 65 s en el
+  // peor caso). Así el navegador nunca reintenta mientras el servidor sigue
+  // trabajando en la misma pregunta, lo que gastaría el doble de cuota.
+  var LIMITE_ESPERA_MS = CFG.espera || 80000;
+
   function enviar(texto) {
     texto = String(texto || "").trim();
     if (!texto || ocupado) return;
-    if (texto.length > MAX_CARACTERES) { agregar("sistema", MENSAJES_ERROR.mensaje_largo); return; }
-
+    if (texto.length > MAX_CARACTERES) { mostrarError("mensaje_largo"); return; }
     agregar("usuario", texto);
     campo.value = "";
     ajustarAltura();
+    intentarEnvio(texto, 0);
+  }
+
+  function nota(texto) {
+    var p = document.createElement("p");
+    p.className = "nota";
+    p.textContent = texto;
+    lista.appendChild(p);
+    bajar();
+    return p;
+  }
+
+  // Los errores no se guardan en el historial: son avisos del momento
+  function mostrarError(codigo, textoParaReintentar) {
+    var d = burbuja("sistema", escapar(MENSAJES_ERROR[codigo] || MENSAJES_ERROR.otro));
+    if (textoParaReintentar) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "sug reintentar";
+      b.textContent = "Reintentar";
+      b.style.marginTop = "8px";
+      b.addEventListener("click", function () {
+        if (ocupado) return;
+        d.remove();
+        intentarEnvio(textoParaReintentar, 0);
+      });
+      d.appendChild(b);
+    }
+    bajar();
+  }
+
+  function intentarEnvio(texto, intento) {
     ocupado = true;
     botonEnviar.disabled = true;
 
@@ -332,17 +472,41 @@
     bajar();
 
     // Si el servicio estaba en reposo, la primera respuesta puede tardar
-    var nota = null;
+    var notaLenta = null;
     var avisoLento = setTimeout(function () {
-      nota = document.createElement("p");
-      nota.className = "nota";
-      nota.textContent = "El servicio se está iniciando; la primera respuesta puede tardar hasta un minuto.";
-      lista.appendChild(nota);
-      bajar();
-    }, 8000);
+      notaLenta = nota("La respuesta está tardando un poco más de lo habitual. Seguimos esperando, no cierre el chat.");
+    }, 10000);
 
     var ctrl = window.AbortController ? new AbortController() : null;
-    var limite = setTimeout(function () { if (ctrl) ctrl.abort(); }, 90000);
+    var corte = setTimeout(function () { if (ctrl) ctrl.abort(); }, LIMITE_ESPERA_MS);
+
+    function limpiar() {
+      clearTimeout(avisoLento);
+      clearTimeout(corte);
+      if (notaLenta) notaLenta.remove();
+      indicador.remove();
+    }
+    function terminar() {
+      ocupado = false;
+      botonEnviar.disabled = false;
+      campo.focus();
+    }
+    function fallar(codigo) {
+      limpiar();
+      if (REINTENTABLES[codigo] && intento < ESPERAS_AUTO.length) {
+        var n = nota(
+          "El asistente está ocupado en este momento. Reintentando automáticamente (" +
+            (intento + 2) + " de " + (ESPERAS_AUTO.length + 1) + ")…"
+        );
+        setTimeout(function () {
+          n.remove();
+          intentarEnvio(texto, intento + 1);
+        }, ESPERAS_AUTO[intento]);
+        return; // sigue ocupado durante la espera
+      }
+      mostrarError(codigo, REINTENTABLES[codigo] || codigo === "otro" ? texto : null);
+      terminar();
+    }
 
     fetch(CFG.api, {
       method: "POST",
@@ -354,25 +518,17 @@
         return r.json().catch(function () { return {}; }).then(function (d) { return { r: r, d: d }; });
       })
       .then(function (x) {
-        indicador.remove();
         if (x.r.ok && x.d.respuesta) {
+          limpiar();
           agregar("bot", x.d.respuesta);
           if (x.d.encuesta) agregar("encuesta", x.d.encuesta);
+          terminar();
         } else {
-          agregar("sistema", MENSAJES_ERROR[x.d.error] || MENSAJES_ERROR.otro);
+          fallar(MENSAJES_ERROR[x.d.error] ? x.d.error : "otro");
         }
       })
       .catch(function (e) {
-        indicador.remove();
-        agregar("sistema", e && e.name === "AbortError" ? MENSAJES_ERROR.tiempo : MENSAJES_ERROR.red);
-      })
-      .then(function () {
-        clearTimeout(avisoLento);
-        clearTimeout(limite);
-        if (nota) nota.remove();
-        ocupado = false;
-        botonEnviar.disabled = false;
-        campo.focus();
+        fallar(e && e.name === "AbortError" ? "tiempo" : "red");
       });
   }
 

@@ -292,7 +292,7 @@ function construirSystemPrompt(n, sel) {
     (n.nombre_asistente
       ? `Te llamas ${n.nombre_asistente}${n.titulo_asistente ? `, ${n.titulo_asistente}` : ""}. Eres el asistente virtual automatizado de "${n.nombre}", ${n.descripcion}. Si te preguntan quién eres, preséntate por tu nombre y aclara que eres un asistente automatizado del CENAME; nunca afirmes ni des a entender que eres una persona.`
       : `Eres el asistente virtual de "${n.nombre}", ${n.descripcion}.`) +
-      ` Atiendes por chat (WhatsApp o el sitio web).`
+      ` Atiendes por chat (WhatsApp, Messenger, Instagram o el sitio web).`
   );
 
   // --- Reglas base + reglas extra opcionales del JSON ---
@@ -661,6 +661,13 @@ app.post("/webhook", async (req, res) => {
   // Responder 200 de inmediato: Meta reintenta si tardas más de unos segundos
   res.sendStatus(200);
 
+  // Messenger (object "page") e Instagram (object "instagram") llegan al mismo
+  // webhook que WhatsApp, pero con otra estructura: se atienden aparte.
+  if (req.body?.object === "page" || req.body?.object === "instagram") {
+    procesarSocial(req.body).catch((e) => console.error("❌ Social:", e.message));
+    return;
+  }
+
   try {
     const value = req.body?.entry?.[0]?.changes?.[0]?.value;
     const mensaje = value?.messages?.[0];
@@ -854,7 +861,160 @@ async function marcarLeido(messageId) {
     }),
   });
 }
-
+// ------------------------------------------------------------
+// CANALES MESSENGER E INSTAGRAM
+// ------------------------------------------------------------
+// Ambos usan la misma "Messenger Platform": llegan por el webhook con
+// entry[].messaging[] y se responden con POST /me/messages.
+//
+// Tokens (variables de entorno):
+//   PAGE_ACCESS_TOKEN -> token de la página de Facebook, generado desde el
+//                        usuario del sistema: NO VENCE. Sirve para Messenger y
+//                        también para Instagram si la cuenta de IG está
+//                        vinculada a la página (camino recomendado).
+//   IG_ACCESS_TOKEN   -> opcional. Token de "Instagram API con inicio de sesión
+//                        de Instagram" (graph.instagram.com). Vence cada 60
+//                        días; solo se usa si está definido.
+// Messenger e Instagram no muestran la negrita con asteriscos de WhatsApp,
+// y tienen límite de largo por mensaje (2000 y 1000 caracteres).
+// ------------------------------------------------------------
+const LIMITE_SOCIAL = { fb: 2000, ig: 1000 };
+ 
+function destinoSocial(canal) {
+  if (canal === "ig" && process.env.IG_ACCESS_TOKEN) {
+    return { url: "https://graph.instagram.com/v21.0/me/messages", token: process.env.IG_ACCESS_TOKEN };
+  }
+  return { url: "https://graph.facebook.com/v21.0/me/messages", token: process.env.PAGE_ACCESS_TOKEN };
+}
+ 
+// Parte un texto largo en trozos que respeten el límite, cortando por párrafo
+function partirTexto(texto, limite) {
+  const partes = [];
+  let actual = "";
+  for (const parrafo of texto.split(/\n{2,}/)) {
+    const bloque = actual ? actual + "\n\n" + parrafo : parrafo;
+    if (bloque.length <= limite) { actual = bloque; continue; }
+    if (actual) partes.push(actual);
+    let resto = parrafo;
+    while (resto.length > limite) {
+      let corte = resto.lastIndexOf(" ", limite);
+      if (corte < limite * 0.5) corte = limite;
+      partes.push(resto.slice(0, corte));
+      resto = resto.slice(corte).trim();
+    }
+    actual = resto;
+  }
+  if (actual) partes.push(actual);
+  return partes;
+}
+ 
+async function enviarSocial(canal, destinatario, texto) {
+  const { url, token } = destinoSocial(canal);
+  if (!token) throw new Error(`Falta el token para el canal ${canal}`);
+  // Sin asteriscos: en Messenger e Instagram se verían literalmente
+  const limpio = texto.replace(/\*([^*\n]+)\*/g, "$1");
+  for (const parte of partirTexto(limpio, LIMITE_SOCIAL[canal])) {
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        recipient: { id: destinatario },
+        messaging_type: "RESPONSE",
+        message: { text: parte },
+      }),
+    });
+    if (!resp.ok) throw new Error(`Envío ${canal} ${resp.status}: ${await resp.text()}`);
+  }
+}
+ 
+// "Escribiendo..." mientras el modelo responde (Flash-Lite puede tardar)
+function accionSocial(canal, destinatario, accion) {
+  const { url, token } = destinoSocial(canal);
+  if (!token) return;
+  fetch(url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ recipient: { id: destinatario }, sender_action: accion }),
+  }).catch(() => {});
+}
+ 
+async function procesarSocial(cuerpo) {
+  const canal = cuerpo.object === "page" ? "fb" : "ig";
+  for (const entrada of cuerpo.entry || []) {
+    for (const evento of entrada.messaging || []) {
+      const msj = evento.message;
+      // Se ignoran: eventos sin mensaje (lecturas, entregas) y los "ecos",
+      // que son los mensajes que la propia página envía.
+      if (!msj || msj.is_echo) continue;
+      if (msj.mid) {
+        if (mensajesProcesados.has(msj.mid)) continue;
+        mensajesProcesados.add(msj.mid);
+      }
+      const remitente = evento.sender?.id;
+      if (!remitente) continue;
+      await atenderSocial(canal, remitente, msj);
+    }
+  }
+}
+ 
+async function atenderSocial(canal, remitente, msj) {
+  const clave = `${canal}:${remitente}`;
+  const usuario = `${canal.toUpperCase()}-${remitente}`;
+  const t0 = Date.now();
+ 
+  if (!msj.text) {
+    await enviarSocial(canal, remitente, "Por el momento solo puedo leer mensajes de texto 🙏 ¿Me escribe su consulta?");
+    return;
+  }
+  const texto = msj.text;
+  console.log(`💬 [${usuario}]: ${texto}`);
+  accionSocial(canal, remitente, "mark_seen");
+  accionSocial(canal, remitente, "typing_on");
+ 
+  try {
+    const historial = obtenerHistorial(clave);
+    historial.mensajes.push({ role: "user", content: texto });
+    if (historial.mensajes.length > MAX_TURNOS) historial.mensajes = historial.mensajes.slice(-MAX_TURNOS);
+    historial.ultimaActividad = Date.now();
+ 
+    let respuesta = await consultarLLM(historial.mensajes, promptPara(historial));
+    const cierra = /\[ENCUESTA\]/i.test(respuesta);
+    respuesta = respuesta.replace(/\[ENCUESTA\]/gi, "").trim();
+ 
+    if (!respuesta) {
+      historial.mensajes.pop();
+      await enviarSocial(canal, remitente, "Disculpe, no pude generar la respuesta en este momento 🙏 ¿Podría repetir su consulta? También puede escribirnos a info@cename.gt.");
+      registrar({ telefono: clave, usuario, mensaje: texto, respuesta: "", resultado: "vacia", ms: Date.now() - t0, salientes: 0 });
+      return;
+    }
+    historial.mensajes.push({ role: "assistant", content: respuesta });
+ 
+    const debeEncuesta = tocaEncuesta(texto, respuesta, cierra, historial);
+    if (debeEncuesta) historial.encuestaEnviada = true;
+ 
+    // La encuesta va como enlace dentro del mismo mensaje: en el teléfono no
+    // se puede escanear un QR que se está viendo en esa misma pantalla.
+    const final = debeEncuesta && ENCUESTA_LINK
+      ? `${respuesta}\n\nAyúdenos a mejorar con esta breve evaluación del servicio: ${ENCUESTA_LINK}`
+      : respuesta;
+    await enviarSocial(canal, remitente, final);
+    accionSocial(canal, remitente, "typing_off");
+ 
+    console.log(`📤 [${usuario}]: ${respuesta.slice(0, 80)}...${debeEncuesta ? " (+ encuesta)" : ""} (${Date.now() - t0} ms)`);
+    // mensajes_salientes = 0: Messenger e Instagram no cobran por mensaje como WhatsApp
+    registrar({ telefono: clave, usuario, mensaje: texto, respuesta, resultado: "ok", ms: Date.now() - t0, encuesta: debeEncuesta, salientes: 0 });
+  } catch (err) {
+    console.error(`❌ ${canal}: error procesando mensaje:`, err.message);
+    descartarTurnoHuerfano(clave);
+    accionSocial(canal, remitente, "typing_off");
+    try {
+      await enviarSocial(canal, remitente, err.cuotaAgotada
+        ? "En este momento estamos atendiendo muchas consultas 🙏 Intente de nuevo en unos minutos, o escríbanos a info@cename.gt."
+        : "Disculpe, tuvimos un inconveniente técnico 🙏 Intente de nuevo, o escríbanos a info@cename.gt.");
+    } catch (_) {}
+    registrar({ telefono: clave, usuario, mensaje: texto, respuesta: "", resultado: err.cuotaAgotada ? "cuota_agotada" : err.saturado ? "saturado" : "error", salientes: 0 });
+  }
+}
 // ------------------------------------------------------------
 // CANAL WEB — chat embebido en el sitio del CENAME
 // ------------------------------------------------------------

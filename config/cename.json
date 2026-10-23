@@ -859,4 +859,19 @@
     "Licencias para organismos de inspección y verificación"
   ],
   "encuesta_satisfaccion": "El CENAME cuenta con una breve evaluación del servicio. Si la persona pregunta si existe una encuesta, un código QR, cómo calificar el servicio o cómo dejar su opinión, confirma que SÍ existe y dile que se la compartes enseguida. No describas cómo le llegará: según el canal, el sistema la entrega automáticamente como imagen con código QR o como un botón para abrir el formulario. Nunca digas que no se cuenta con encuesta."
+  "eventos": [
+    {
+      "titulo": "Curso-Taller: Implementación de un Sistema de Gestión de la Calidad (SGC) según la NTG/ISO/IEC 17025:2017",
+      "vigente_hasta": "2026-11-12",
+      "detalle": [
+        "Norma: NTG/ISO/IEC 17025:2017, Requisitos generales para la competencia de los laboratorios de ensayo y calibración.",
+        "Enfoque: laboratorios de calibración. Incluye un taller presencial en el proceso de interés del participante, con el apoyo técnico del metrólogo a cargo de esa área.",
+        "Áreas del taller: masas y balanzas, temperatura, dimensional, presión, volumen, viscosidad, fisicoquímica, electricidad, y tiempo y frecuencia.",
+        "Fechas: 10, 11 y 12 de noviembre de 2026. Horario: de 08:30 a 16:00 horas.",
+        "Costo: US $450.00.",
+        "Responsable: MSc. Dalia García, Coordinadora de la Calidad del CENAME.",
+        "Inscripción: https://q.me-qr.com/5ndacpo0 . Para consultas sobre cupos y detalles, escribir a info@cename.gt."
+      ]
+    }
+  ]
 }

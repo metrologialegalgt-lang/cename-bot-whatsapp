@@ -365,7 +365,19 @@ function construirSystemPrompt(n, sel) {
       );
     }
   }
-
+  // --- Cursos y eventos con fecha: se omiten solos al pasar "vigente_hasta" ---
+  if (Array.isArray(n.eventos) && n.eventos.length) {
+    const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "America/Guatemala" }); // AAAA-MM-DD
+    const vigentes = n.eventos.filter((e) => !e.vigente_hasta || e.vigente_hasta >= hoy);
+    if (vigentes.length) {
+      secciones.push(
+        `PRÓXIMOS CURSOS Y EVENTOS (fecha de hoy: ${hoy}). Menciónalos cuando pregunten por cursos, capacitaciones, talleres o "el siguiente curso", antes que la lista general de cursos:\n` +
+          vigentes
+            .map((e) => `▸ ${e.titulo}\n` + (e.detalle || []).map((d) => `   • ${d}`).join("\n"))
+            .join("\n\n")
+      );
+    }
+  }
   // --- Servicios que NO se prestan actualmente ---
   if (Array.isArray(n.servicios_no_disponibles) && n.servicios_no_disponibles.length) {
     secciones.push(
